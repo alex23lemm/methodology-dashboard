@@ -1,4 +1,4 @@
-# Methdology Dashboard
+# Methodology Dashboard
 
 Methodology Dashboard is a web application which visualizes the overall project
 progress based on data which is extracted from OpenAir, LabCase and ARIS BS.
@@ -7,9 +7,11 @@ Methodology Dashboard consists of two parts:
 * A separate __R script__ for loading and processing the data. The script creates
 several .csv files which are consumed by the UI layer for visualization purposes
 (The script needs to be set up as a Task (Windows))
-* A __MashZone application__ visualizing the processed data 
+* A __MashZone application__ visualizing the processed data
 
 Only the first part of the application (R script) is part of the repository.
+
+The relevant ARIS BS data is provided by the server via a JavaScript report. The report is also part of this repository
 
 ## Installation
 
@@ -27,7 +29,7 @@ Only the first part of the application (R script) is part of the repository.
 
 * You have to set up the following folder app structure under the `resources` folder
 of your ARIS MashZone installation:
-    * `prime dashboard 2013`: Not included in Git repo. Place the entire repository content here. In addition you have to create the following folders below the `prime dashboard 2013` folder
+    * `prime dashboard 2013`: Not included in Git repo. Place the entire repository content here. Only exclude the jsScript folder. In addition you have to create the following folders below the `prime dashboard 2013` folder
       * `rawData`: Downloaded data will get stored here
       * `rOutput`: Processed data wil get stored here
 * The path in the `setwd()` command in `main.R` needs to be changed accordingly
