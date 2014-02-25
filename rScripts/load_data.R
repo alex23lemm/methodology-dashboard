@@ -1,5 +1,3 @@
-# Author: Alex Lemm
-#
 # Purpose: The load_data.R script extracts the relevant raw data by fetching 
 # several reports and additonal files from OpenAir and LabCase. 
 # The script aborts without saving anything should an error occur in between.
@@ -19,9 +17,9 @@
 # Instead methods from the httr (url_ok) and the RCurl (getURL, getBinaryURL) 
 # package were used to download the data
 #
-#download.file('https://docs.labcase.softwareag.com/primelabcaseint/oareport?report=prime_voluntary_2013', 
+#download.file(config$url$oa_prime_voluntary, 
 #              destfile='./rawData/prime_voluntary_2013.csv')
-#download.file('https://docs.labcase.softwareag.com/primelabcaseint/oareport?report=prime_bookable_2013', 
+#download.file(config$url$oa_prime_bookable, 
 #              destfile='./rawData/prime_bookable_2013.csv')
 
 

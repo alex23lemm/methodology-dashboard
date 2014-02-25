@@ -1,5 +1,3 @@
-# Author: Alex Lemm
-#
 # Purpose: The process.R script loads the previously extracted raw data into 
 # memory and processes it. Its major task is to construct tiny data frames which
 # will be saved as .csv files. Those .csv files will later be consumed by the

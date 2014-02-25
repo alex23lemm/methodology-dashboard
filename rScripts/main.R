@@ -1,5 +1,3 @@
-# Author: Alex Lemm
-#
 # Purpose: main.R sources load_data.R, process_data.R.
 # The downloaded, processed and saved data of that workflow serves as the input 
 # for the data visualization on the UI layer.
