@@ -46,7 +46,7 @@ mapToAcronym <- function(names){
           ifelse(names[i] == 'Business Process Management', 'BPM',
           ifelse(names[i] == 'Business Process Management ', 'BPM',
           ifelse(names[i] == 'Business Process Analysis', 'BPA',
-          ifelse(names[i] == 'Enterprise Architecture', 'EA',
+          ifelse(names[i] == 'Enterprise Architecture Management', 'EAM',
           names[i])))))))))))))))
   return (output)
 }
@@ -179,18 +179,22 @@ totalDays <- as.data.frame(cbind(
 write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 
 
-# Generate release progress by methodolgy table
-#Exclude non-methodogoly entries
-releaseProgressByMethodolgy <- subset(lc.prime.tasks,
-                                      (!project %in% c('Cockpit and Prime-to-Go',
-                                                    'Process Improvement Methodology', 
-                                                    'Training Management')))
-# Exclude work package trackers
-releaseProgressByMethodolgy <- subset(releaseProgressByMethodolgy, 
-                                      tracker != 'Work package')
-releaseProgressByMethodolgy <- ddply(releaseProgressByMethodolgy, 
-                                     c('project'), summarize, 
-                                     achievementInPercent = mean(done))
+# Generate release progress by methodology table
+# Exclude non-methodological entries
+releaseProgressByMethodolgy <- filter(lc.prime.tasks, 
+                                !project %in% c('Cockpit and Prime-to-Go',
+                                                'Process Improvement Methodology', 
+                                                'Training Management',
+                                                'Dashboards'))
+# Only include work package trackers; calculate overall methodology achievement 
+# in percent
+releaseProgressByMethodolgy <- releaseProgressByMethodolgy %.%
+                                 filter(tracker == 'Work package') %.%
+                                 group_by(project) %.%
+                                 summarize(
+                                   achievementInPercent = mean(done)
+                                 )
+
 releaseProgressByMethodolgy$project <- mapToAcronym(releaseProgressByMethodolgy$project) 
 write.csv(releaseProgressByMethodolgy, 
           file='./rOutput/releaseProgressByMethodolgy.csv', row.names=FALSE)
