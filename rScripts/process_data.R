@@ -19,7 +19,7 @@ if (Sys.getenv("JAVA_HOME")!="")
 
 
 #-------------------------------------------------------------------------------
-# Definition of utility functions
+# 1. Definition of utility functions
 
 mapToAcronym <- function(names){
   # Maps the complete methodology names to an abbreviated version of the name
@@ -52,7 +52,7 @@ mapToAcronym <- function(names){
 }
 
 #-------------------------------------------------------------------------------
-# Process OpenAir and LabCase raw data
+# 2. Process OpenAir and LabCase raw data
 
 
 # Process Open Air data
@@ -101,19 +101,22 @@ oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'), all.x=TRUE)
 # Process LabCase data (project list)
 
 lc.prime.tasks <- read.xlsx('./rawData/lcPrimeTasks.xls',
-                            sheetIndex = 1, enconding = 'UTF-8')
+                            sheetIndex = 1, encoding = 'UTF-8')
 names(lc.prime.tasks) <- tolower(names(lc.prime.tasks))
 names(lc.prime.tasks)[names(lc.prime.tasks) == 'x..done'] <- c('done')
 lc.prime.tasks$project <- gsub('Prime for |Prime |Prime - ', "",
                                lc.prime.tasks$project)
 lc.prime.tasks <- transform(lc.prime.tasks, 
-                            done = as.numeric(as.character(done)))
-
-
+                            estimated.time = as.numeric(as.character(estimated.time)),
+                            done = as.numeric(as.character(done))
+                            )
+lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
+                            
+                                  
 #-------------------------------------------------------------------------------
-#Create and save .csv files
+# 3.Create and save .csv files
 #
-#Overview page
+# Overview page
 #
 
 # Calculate total investment in person days per methodology
@@ -184,15 +187,18 @@ write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 releaseProgressByMethodolgy <- filter(lc.prime.tasks, 
                                 !project %in% c('Cockpit and Prime-to-Go',
                                                 'Process Improvement Methodology', 
-                                                'Training Management',
-                                                'Dashboards'))
+                                                'Training Management'
+                                              ))
 # Only include work package trackers; calculate overall methodology achievement 
 # in percent
 releaseProgressByMethodolgy <- releaseProgressByMethodolgy %.%
                                  filter(tracker == 'Work package') %.%
+                                 mutate(
+                                   spentTime = (estimated.time * done) / 100
+                                 ) %.%
                                  group_by(project) %.%
                                  summarize(
-                                   achievementInPercent = mean(done)
+                                   achievementInPercent = sum(spentTime) / sum(estimated.time)
                                  )
 
 releaseProgressByMethodolgy$project <- mapToAcronym(releaseProgressByMethodolgy$project) 
