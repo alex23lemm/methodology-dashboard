@@ -65,6 +65,8 @@ oa.billable.raw <- read.csv('./rawData/prime_bookable_2013.csv',
 # Exclude numbers from the GCS Portfolio and Methodology team
 oa.billable.raw <- subset(oa.billable.raw,
                           Phase != 'Prime - Process Improvement Methodology')
+# oa.billable.raw <- oa.billable.raw %.%
+#                      filter(Phase != 'Prime - Process Improvement Methodology')
 
 # Extract total billable and total voluntary hours spent
 total.vol.hours <- sum(oa.voluntary.raw$Approved.hours)
@@ -125,6 +127,13 @@ totalInvestByMethInPersonDays <- ddply(oa.pro.mer, c('methodology'),
                                        summarize, 
                                        daysSpent = round(sum(days.spent),
                                                          digits = 1))
+# totalInvestByMethInPersonDays <- oa.pro.mer %.%
+#                                    group_by(methodology) %.%
+#                                    summarize(
+#                                      daysSpent = round(sum(days.spent), 
+#                                                        digits = 1)
+#                                      )
+  
 totalInvestByMethInPersonDays$methodology <- mapToAcronym(
   totalInvestByMethInPersonDays$methodology)
 write.csv(totalInvestByMethInPersonDays, 
@@ -137,6 +146,13 @@ totalInvestByMethInEuros <- ddply(oa.pro.mer, c('methodology'),
                                   summarize, 
                                   eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
                                                      digits = 1))
+# totalInvestByMethInEuros <- oa.pro.mer %.%
+#                               group_by(methodology) %.%
+#                               summarize(
+#                                 eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
+#                                                    digits = 1))
+#                                 )
+
 totalInvestByMethInEuros$methodology <- mapToAcronym(
   totalInvestByMethInEuros$methodology)
 write.csv(totalInvestByMethInEuros, 
@@ -147,6 +163,12 @@ write.csv(totalInvestByMethInEuros,
 totalInvestByCountry <- ddply(oa.pro.mer, c('methodology','country'), 
                               summarize, daysSpent = round(sum(days.spent),
                                                            digits=1))
+# totalInvestByCountry <- oa.pro.mer %.%
+#                           group_by(methodology, country) %.%
+#                           summarize(
+#                             daysSpent = round(sum(days.spent),
+#                                               digits=1))
+#                             )
 totalInvestByCountry$methodology <- mapToAcronym(
   totalInvestByCountry$methodology)
 write.csv(totalInvestByCountry, 
@@ -158,6 +180,10 @@ write.csv(totalInvestByCountry,
 daysSpentByContributor <- subset(oa.pro.mer, 
                                  select=c(user, methodology, country, 
                                           days.spent, cost_type))
+# daysSpentByContributor <- oa.pro.mer %.%
+#                             select(user, methodology, country, days.spent, 
+#                                    cost_type)
+
 daysSpentByContributor$methodology <- mapToAcronym(
   daysSpentByContributor$methodology)
 # Transform long data to wide data
@@ -177,9 +203,8 @@ write.csv(daysSpentByContributor,
 # Generate total days table
 totalVolDays = round(total.vol.hours/8, digits = 1)
 totalBillDays = round(total.bill.hours/8, digits = 1)
-totalDays <- as.data.frame(cbind(
-  totalDays = totalVolDays + totalBillDays,
-  totalVolDays, totalBillDays))
+totalDays <- as.data.frame(cbind(totalDays = totalVolDays + totalBillDays,
+                                 totalVolDays, totalBillDays))
 write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 
 
