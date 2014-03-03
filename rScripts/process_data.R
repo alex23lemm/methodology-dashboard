@@ -47,7 +47,8 @@ mapToAcronym <- function(names){
           ifelse(names[i] == 'Business Process Management ', 'BPM',
           ifelse(names[i] == 'Business Process Analysis', 'BPA',
           ifelse(names[i] == 'Enterprise Architecture Management', 'EAM',
-          names[i])))))))))))))))
+          ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
+          names[i]))))))))))))))))
   return (output)
 }
 
