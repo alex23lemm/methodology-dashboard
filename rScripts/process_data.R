@@ -62,11 +62,6 @@ oa.voluntary.raw <- read.csv('./rawData/prime_voluntary_2013.csv',
                              header=TRUE, encoding='UTF-8')
 oa.billable.raw <- read.csv('./rawData/prime_bookable_2013.csv',
                             header=TRUE, encoding='UTF-8')
-# Exclude numbers from the GCS Portfolio and Methodology team
-oa.billable.raw <- subset(oa.billable.raw,
-                          Phase != 'Prime - Process Improvement Methodology')
-# oa.billable.raw <- oa.billable.raw %.%
-#                      filter(Phase != 'Prime - Process Improvement Methodology')
 
 # Extract total billable and total voluntary hours spent
 total.vol.hours <- sum(oa.voluntary.raw$Approved.hours)
@@ -123,16 +118,12 @@ lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
 #
 
 # Calculate total investment in person days per methodology
-totalInvestByMethInPersonDays <- ddply(oa.pro.mer, c('methodology'), 
-                                       summarize, 
-                                       daysSpent = round(sum(days.spent),
-                                                         digits = 1))
-# totalInvestByMethInPersonDays <- oa.pro.mer %.%
-#                                    group_by(methodology) %.%
-#                                    summarize(
-#                                      daysSpent = round(sum(days.spent), 
-#                                                        digits = 1)
-#                                      )
+totalInvestByMethInPersonDays <- oa.pro.mer %.%
+                                   group_by(methodology) %.%
+                                   summarize(
+                                     daysSpent = round(sum(days.spent), 
+                                                       digits = 1)
+                                     )
   
 totalInvestByMethInPersonDays$methodology <- mapToAcronym(
   totalInvestByMethInPersonDays$methodology)
@@ -142,16 +133,12 @@ write.csv(totalInvestByMethInPersonDays,
 
 
 # Calculate total investment in K euros per methodology
-totalInvestByMethInEuros <- ddply(oa.pro.mer, c('methodology'), 
-                                  summarize, 
-                                  eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
-                                                     digits = 1))
-# totalInvestByMethInEuros <- oa.pro.mer %.%
-#                               group_by(methodology) %.%
-#                               summarize(
-#                                 eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
-#                                                    digits = 1))
-#                                 )
+totalInvestByMethInEuros <- oa.pro.mer %.%
+                              group_by(methodology) %.%
+                              summarize(
+                                eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
+                                                   digits = 1)
+                                )
 
 totalInvestByMethInEuros$methodology <- mapToAcronym(
   totalInvestByMethInEuros$methodology)
@@ -160,15 +147,12 @@ write.csv(totalInvestByMethInEuros,
 
 
 # Calculate total investment in person days per methododoly per country
-totalInvestByCountry <- ddply(oa.pro.mer, c('methodology','country'), 
-                              summarize, daysSpent = round(sum(days.spent),
-                                                           digits=1))
-# totalInvestByCountry <- oa.pro.mer %.%
-#                           group_by(methodology, country) %.%
-#                           summarize(
-#                             daysSpent = round(sum(days.spent),
-#                                               digits=1))
-#                             )
+totalInvestByCountry <- oa.pro.mer %.%
+                          group_by(methodology, country) %.%
+                          summarize(
+                            daysSpent = round(sum(days.spent),
+                                              digits=1)
+                            )
 totalInvestByCountry$methodology <- mapToAcronym(
   totalInvestByCountry$methodology)
 write.csv(totalInvestByCountry, 
@@ -177,12 +161,9 @@ write.csv(totalInvestByCountry,
 
 
 # Generate contributers by country table
-daysSpentByContributor <- subset(oa.pro.mer, 
-                                 select=c(user, methodology, country, 
-                                          days.spent, cost_type))
-# daysSpentByContributor <- oa.pro.mer %.%
-#                             select(user, methodology, country, days.spent, 
-#                                    cost_type)
+daysSpentByContributor <- oa.pro.mer %.%
+                            select(user, methodology, country, days.spent, 
+                                   cost_type)
 
 daysSpentByContributor$methodology <- mapToAcronym(
   daysSpentByContributor$methodology)
@@ -191,7 +172,13 @@ daysSpentByContributor <- dcast(daysSpentByContributor,
                                 user + methodology + country ~ cost_type, sum, 
                                 value.var = "days.spent")
 # Add total.days.spent column to data frame
-daysSpentByContributor <- transform(daysSpentByContributor, total.days = B + V)
+# Check if volunatary work exists
+if ("V" %in% names(daysSpentByContributor)) {
+  daysSpentByContributor <- transform(daysSpentByContributor, total.days = B + V)
+} else {
+  daysSpentByContributor <- transform(daysSpentByContributor, total.days = B)
+}
+
 
 # Duplicate methodolgy column in order to have another filter option available 
 # on the UI layer

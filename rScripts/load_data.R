@@ -11,16 +11,10 @@
 # the code below.
 
 
-
-# download.file commented out because it does not work with rscript.exe due to https
+# download.file does not work with rscript.exe due to https
 # see: http://stackoverflow.com/questions/7715723/sourcing-r-script-over-https
 # Instead methods from the httr (url_ok) and the RCurl (getURL, getBinaryURL) 
-# package were used to download the data
-#
-#download.file(config$url$oa_prime_voluntary, 
-#              destfile='./rawData/prime_voluntary_2013.csv')
-#download.file(config$url$oa_prime_bookable, 
-#              destfile='./rawData/prime_bookable_2013.csv')
+# package were used to download the data.
 
 
 #-------------------------------------------------------------------------------
@@ -103,9 +97,10 @@ if (!error) {
   date <- format(now(), '%b %d, %Y %X') 
   write.csv(as.data.frame(date), file = './rOutput/dateOfRetrieval.csv', 
             row.names = FALSE)
-  
-  write.csv(tmp.bookable.df, file = './rawData/prime_bookable_2013.csv')
-  write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary_2013.csv')
+  write.csv(tmp.bookable.df, file = './rawData/prime_bookable_2013.csv', 
+            row.names = FALSE)
+  write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary_2013.csv',
+            row.names = FALSE)
   
   con <- file('./rawData/employeeList2013.xlsx', open = 'wb')
   writeBin(employee.binary, con)
