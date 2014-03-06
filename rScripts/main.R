@@ -11,7 +11,7 @@ library(xlsx)
 library(reshape2)
 library(dplyr)
 
-setwd('C:/Program Files/ARIS MashZone/resources/prime dashboard 2013')
+setwd('C:/Program Files/ARIS MashZone/resources/prime dashboard')
 # Load config file
 config <- yaml.load_file('config.yml')
 
