@@ -21,12 +21,27 @@ if (Sys.getenv("JAVA_HOME")!="")
 #-------------------------------------------------------------------------------
 # 1. Definition of utility functions
 
+cutNamePrefix <- function(names) {
+  # Cuts the prefix of the OA phase name or the LC project name
+  #
+  # Args:
+  #   names: character vector containing the complete methodology names
+  #          including a prefix
+  #        
+  # 
+  # Returns:
+  #   Vector with full methodology names
+  output <- gsub('^(Prime for |Prime |Prime - |Prime-|2014 Prime for )', "", names)
+  return (output)
+}
+
+
 mapToAcronym <- function(names){
   # Maps the complete methodology names to an abbreviated version of the name
   #
   # Args:
   #   names: character vector containing the complete methodology names 
-  #         suffixes
+  #         
   # 
   # Returns:
   #   Vector with abbreviated methodology names
@@ -34,7 +49,7 @@ mapToAcronym <- function(names){
   for(i in 1:length(names))
     output[i] <- ifelse(names[i] == 'Process Improvement Methodology', 'General',
           ifelse(names[i] == 'Governance Risk and Compliance', 'GRC',
-          ifelse(names[i] == 'Project Management', 'Project Mgm',
+          ifelse(names[i] == 'Project Management', 'PM',
           ifelse(names[i] == 'Cockpit and Prime-to-Go', 'Ckpt and PtG',
           ifelse(names[i] == 'Project Governance', 'Project Gov',
           ifelse(names[i] == 'Master Data Management', 'MDM',
@@ -42,15 +57,18 @@ mapToAcronym <- function(names){
           ifelse(names[i] == 'Process Intelligence', 'PI',
           ifelse(names[i] == 'Process-driven SAP Management', 'PDSAP',
           ifelse(names[i] == 'Process-Driven SAP Management', 'PDSAP',
-          ifelse(names[i] == 'Training Management', 'Trng Mgm',
+          ifelse(grepl('^Training', names[i]), 'Trng Mgm',
           ifelse(names[i] == 'Business Process Management', 'BPM',
           ifelse(names[i] == 'Business Process Management ', 'BPM',
           ifelse(names[i] == 'Business Process Analysis', 'BPA',
           ifelse(names[i] == 'Enterprise Architecture Management', 'EAM',
+          ifelse(grepl('^Model to Execute', names[i]), 'M2E',
           ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
-          names[i]))))))))))))))))
-  return (output)
+          names[i])))))))))))))))))
+  return (as.factor(output))
 }
+
+
 
 #-------------------------------------------------------------------------------
 # 2. Process OpenAir and LabCase raw data
@@ -58,9 +76,9 @@ mapToAcronym <- function(names){
 
 # Process Open Air data
 
-oa.voluntary.raw <- read.csv('./rawData/prime_voluntary_2013.csv', 
+oa.voluntary.raw <- read.csv('./rawData/prime_voluntary.csv', 
                              header=TRUE, encoding='UTF-8')
-oa.billable.raw <- read.csv('./rawData/prime_bookable_2013.csv',
+oa.billable.raw <- read.csv('./rawData/prime_bookable.csv',
                             header=TRUE, encoding='UTF-8')
 
 # Extract total billable and total voluntary hours spent
@@ -77,18 +95,20 @@ oa.processed <- rbind(oa.voluntary.raw, oa.billable.raw)
 
 # Process merged OpenAir raw data
 names(oa.processed) <- tolower(names(oa.processed))
-names(oa.processed)[names(oa.processed) == 'phase'] <- c('methodology')
-oa.processed$methodology <- gsub('Prime for |Prime |Prime - ', "",
-                                 oa.processed$methodology)
+names(oa.processed)[names(oa.processed) == 'phase'] <- 'methodology'
+oa.processed$methodology <- cutNamePrefix(oa.processed$methodology)
+oa.processed$methodology <- mapToAcronym(oa.processed$methodology)
+
 oa.processed <- transform(oa.processed,
                           user = gsub(" ", "", user),
                           days.spent = approved.hours/8)
 
 
+
 # Process LabCase data (employee list)
 
 # Load employee-country-mapping
-empl.country.map <- read.xlsx('./rawData/employeeList2013.xlsx', 
+empl.country.map <- read.xlsx('./rawData/employeeCountryMapping', 
                             sheetIndex = 1, encoding = 'UTF-8')
 names(empl.country.map)[1] <- 'user'
 
@@ -96,19 +116,24 @@ names(empl.country.map)[1] <- 'user'
 oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'), all.x=TRUE)
 
 
+
 # Process LabCase data (project list)
 
 lc.prime.tasks <- read.xlsx('./rawData/lcPrimeTasks.xls',
                             sheetIndex = 1, encoding = 'UTF-8')
 names(lc.prime.tasks) <- tolower(names(lc.prime.tasks))
-names(lc.prime.tasks)[names(lc.prime.tasks) == 'x..done'] <- c('done')
-lc.prime.tasks$project <- gsub('Prime for |Prime |Prime - ', "",
-                               lc.prime.tasks$project)
+names(lc.prime.tasks)[names(lc.prime.tasks) == 'x..done'] <- 'done'
+names(lc.prime.tasks)[names(lc.prime.tasks) == 'project'] <- 'methodology'
+lc.prime.tasks$methodology <- cutNamePrefix(lc.prime.tasks$methodology)
+lc.prime.tasks$methodology <- mapToAcronym(lc.prime.tasks$methodology)
+
+
 lc.prime.tasks <- transform(lc.prime.tasks, 
                             estimated.time = as.numeric(as.character(estimated.time)),
                             done = as.numeric(as.character(done))
                             )
 lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
+
                             
                                   
 #-------------------------------------------------------------------------------
@@ -124,12 +149,10 @@ totalInvestByMethInPersonDays <- oa.pro.mer %.%
                                      daysSpent = round(sum(days.spent), 
                                                        digits = 1)
                                      )
-  
-totalInvestByMethInPersonDays$methodology <- mapToAcronym(
-  totalInvestByMethInPersonDays$methodology)
 write.csv(totalInvestByMethInPersonDays, 
           file = './rOutput/totalInvestByMethInPersonDays.csv', 
           row.names = FALSE)
+
 
 
 # Calculate total investment in K euros per methodology
@@ -139,11 +162,9 @@ totalInvestByMethInEuros <- oa.pro.mer %.%
                                 eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
                                                    digits = 1)
                                 )
-
-totalInvestByMethInEuros$methodology <- mapToAcronym(
-  totalInvestByMethInEuros$methodology)
 write.csv(totalInvestByMethInEuros, 
           file = './rOutput/totalInvestByMethInEuros.csv', row.names = FALSE)
+
 
 
 # Calculate total investment in person days per methododoly per country
@@ -153,20 +174,16 @@ totalInvestByCountry <- oa.pro.mer %.%
                             daysSpent = round(sum(days.spent),
                                               digits=1)
                             )
-totalInvestByCountry$methodology <- mapToAcronym(
-  totalInvestByCountry$methodology)
 write.csv(totalInvestByCountry, 
           file = './rOutput/totalInvestByCountryInPersonDays.csv', 
           row.names = FALSE)
+
 
 
 # Generate contributers by country table
 daysSpentByContributor <- oa.pro.mer %.%
                             select(user, methodology, country, days.spent, 
                                    cost_type)
-
-daysSpentByContributor$methodology <- mapToAcronym(
-  daysSpentByContributor$methodology)
 # Transform long data to wide data
 daysSpentByContributor <- dcast(daysSpentByContributor, 
                                 user + methodology + country ~ cost_type, sum, 
@@ -178,13 +195,12 @@ if ("V" %in% names(daysSpentByContributor)) {
 } else {
   daysSpentByContributor <- transform(daysSpentByContributor, total.days = B)
 }
-
-
 # Duplicate methodolgy column in order to have another filter option available 
 # on the UI layer
 daysSpentByContributor$additional_meth <- daysSpentByContributor$methodology
 write.csv(daysSpentByContributor, 
           file = './rOutput/daysSpentByContributor.csv', row.names = FALSE)
+
 
 
 # Generate total days table
@@ -195,27 +211,21 @@ totalDays <- as.data.frame(cbind(totalDays = totalVolDays + totalBillDays,
 write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 
 
+
 # Generate release progress by methodology table
-# Exclude non-methodological entries
-releaseProgressByMethodolgy <- filter(lc.prime.tasks, 
-                                !project %in% c('Cockpit and Prime-to-Go',
-                                                'Process Improvement Methodology', 
-                                                'Training Management'
-                                              ))
 # Only include work package trackers; calculate overall methodology achievement 
 # in percent
-releaseProgressByMethodolgy <- releaseProgressByMethodolgy %.%
+releaseProgressByMethodology <- lc.prime.tasks %.%
                                  filter(tracker == 'Work package') %.%
                                  mutate(
                                    spentTime = (estimated.time * done) / 100
                                  ) %.%
-                                 group_by(project) %.%
+                                 group_by(methodology) %.%
                                  summarize(
-                                   achievementInPercent = sum(spentTime) / sum(estimated.time)
+                                   achievementInPercent = (sum(spentTime) / sum(estimated.time))*100
                                  )
 
-releaseProgressByMethodolgy$project <- mapToAcronym(releaseProgressByMethodolgy$project) 
-write.csv(releaseProgressByMethodolgy, 
+write.csv(releaseProgressByMethodology, 
           file='./rOutput/releaseProgressByMethodolgy.csv', row.names=FALSE)
 
 

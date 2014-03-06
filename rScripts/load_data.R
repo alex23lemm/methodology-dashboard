@@ -97,12 +97,12 @@ if (!error) {
   date <- format(now(), '%b %d, %Y %X') 
   write.csv(as.data.frame(date), file = './rOutput/dateOfRetrieval.csv', 
             row.names = FALSE)
-  write.csv(tmp.bookable.df, file = './rawData/prime_bookable_2013.csv', 
+  write.csv(tmp.bookable.df, file = './rawData/prime_bookable.csv', 
             row.names = FALSE)
-  write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary_2013.csv',
+  write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary.csv',
             row.names = FALSE)
   
-  con <- file('./rawData/employeeList2013.xlsx', open = 'wb')
+  con <- file('./rawData/employeeCountryMapping', open = 'wb')
   writeBin(employee.binary, con)
   close(con)
   
