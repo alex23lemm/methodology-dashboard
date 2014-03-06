@@ -9,7 +9,6 @@ library(yaml)
 
 library(xlsx)
 library(reshape2)
-library(plyr)
 library(dplyr)
 
 setwd('C:/Program Files/ARIS MashZone/resources/prime dashboard 2013')
