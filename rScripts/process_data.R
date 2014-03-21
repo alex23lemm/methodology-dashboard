@@ -106,10 +106,10 @@ oa.processed <- transform(oa.processed,
                           days.spent = approved.hours / 8)
 
 # Extract LC WP number and store result in separate column
-oa.processed$lc.issue.numb <- sapply(regmatches(oa.processed$task, 
+oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task, 
                                                 regexec('WP ([0-9]+)', 
                                                         as.character(oa.processed$task))),
-                                     function(x)x[2])
+                                     function(x)x[2]))
 
 
 
@@ -133,6 +133,8 @@ lc.prime.tasks <- read.xlsx('./rawData/lcPrimeTasks.xls',
 names(lc.prime.tasks) <- tolower(names(lc.prime.tasks))
 names(lc.prime.tasks)[names(lc.prime.tasks) == 'x..done'] <- 'done'
 names(lc.prime.tasks)[names(lc.prime.tasks) == 'project'] <- 'methodology'
+names(lc.prime.tasks)[names(lc.prime.tasks) == 'x.'] <- 'lc.issue.numb'
+lc.prime.tasks$x..1 <- NULL
 lc.prime.tasks$methodology <- cutNamePrefix(lc.prime.tasks$methodology)
 lc.prime.tasks$methodology <- mapToAcronym(lc.prime.tasks$methodology)
 
@@ -142,7 +144,8 @@ lc.prime.tasks <- mutate(lc.prime.tasks,
                             done = as.numeric(as.character(done)),
                             spent.time = (estimated.time * done) / 100,
                             estimated.days = estimated.time / 8, 
-                            spent.days = spent.time / 8 
+                            spent.days = spent.time / 8,
+                            lc.issue.numb = as.numeric(as.character(lc.issue.numb))
                             )
 lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
 lc.prime.tasks$spent.time[is.na(lc.prime.tasks$spent.time)] <- 0
@@ -232,12 +235,9 @@ write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 # in percent
 releaseProgressByMethodology <- lc.prime.tasks %.%
                                  filter(tracker == 'Work package') %.%
-                                 mutate(
-                                   spentTime = (estimated.time * done) / 100
-                                 ) %.%
                                  group_by(methodology) %.%
                                  summarize(
-                                   achievementInPercent = (sum(spentTime) / sum(estimated.time))*100
+                                   achievementInPercent = (sum(spent.time) / sum(estimated.time))*100
                                  )
 
 write.csv(releaseProgressByMethodology, 
