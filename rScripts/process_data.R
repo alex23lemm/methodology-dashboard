@@ -105,6 +105,13 @@ oa.processed <- transform(oa.processed,
                           days.planned = task.planned.hours / 8,
                           days.spent = approved.hours / 8)
 
+# Extract LC WP number and store result in separate column
+oa.processed$lc.issue.numb <- sapply(regmatches(oa.processed$task, 
+                                                regexec('WP ([0-9]+)', 
+                                                        as.character(oa.processed$task))),
+                                     function(x)x[2])
+
+
 
 
 # Process LabCase data (employee list)
@@ -236,10 +243,14 @@ releaseProgressByMethodology <- lc.prime.tasks %.%
 write.csv(releaseProgressByMethodology, 
           file='./rOutput/releaseProgressByMethodolgy.csv', row.names=FALSE)
 
-
-#
+#-------------------------------------------------------------------------------
 #Generation of MashZone relevant CSV files
 #
 #Details page
 #
-#Todo (alem)
+
+
+
+
+
+
