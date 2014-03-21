@@ -102,8 +102,8 @@ oa.processed$methodology <- mapToAcronym(oa.processed$methodology)
 
 oa.processed <- transform(oa.processed,
                           user = gsub(" ", "", user),
-                          days.planned = task.planned.hours/8,
-                          days.spent = approved.hours/8)
+                          days.planned = task.planned.hours / 8,
+                          days.spent = approved.hours / 8)
 
 
 
