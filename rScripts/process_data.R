@@ -102,6 +102,7 @@ oa.processed$methodology <- mapToAcronym(oa.processed$methodology)
 
 oa.processed <- transform(oa.processed,
                           user = gsub(" ", "", user),
+                          days.planned = task.planned.hours/8,
                           days.spent = approved.hours/8)
 
 
@@ -129,11 +130,17 @@ lc.prime.tasks$methodology <- cutNamePrefix(lc.prime.tasks$methodology)
 lc.prime.tasks$methodology <- mapToAcronym(lc.prime.tasks$methodology)
 
 
-lc.prime.tasks <- transform(lc.prime.tasks, 
+lc.prime.tasks <- mutate(lc.prime.tasks, 
                             estimated.time = as.numeric(as.character(estimated.time)),
-                            done = as.numeric(as.character(done))
+                            done = as.numeric(as.character(done)),
+                            spent.time = (estimated.time * done) / 100,
+                            estimated.days = estimated.time / 8, 
+                            spent.days = spent.time / 8 
                             )
 lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
+lc.prime.tasks$spent.time[is.na(lc.prime.tasks$spent.time)] <- 0
+lc.prime.tasks$estimated.days[is.na(lc.prime.tasks$estimated.days)] <- 0
+lc.prime.tasks$spent.days[is.na(lc.prime.tasks$spent.days)] <- 0
 
                             
                                   
