@@ -70,6 +70,68 @@ mapToAcronym <- function(names){
 }
 
 
+mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
+  # Merges the LC and OA data on the work package level 
+  #
+  # Args:
+  #   oa.data.df: Processed OA data
+  #   lc.data.df: Processed LC data
+  #         
+  # Returns:
+  #   A data frame containing the merged data and selected columns. In addition, 
+  #   the column 'check' will show if a data problem exists in one of the source
+  #   systems:
+  #   0: no issue
+  #   1: LC data issue 
+  #   2: OA data issue
+  
+  oa.tmp <- group_by(oa.data.df, methodology, task, lc.issue.numb) %.%
+    summarize(
+      # Divide by n() (nummber of resources assigend to this task) because the 
+      # total sum of days.planned for a specific task is shown for each assigend
+      # resource
+      days.planned = sum(days.planned)/n(),
+      # Unlike for days.planned, the days.spent column shows the days spent for 
+      # each individual resource
+      days.spent = sum(days.spent)
+    )
+  names(oa.tmp)[names(oa.tmp) == 'days.planned'] <- 'oa.days.planned'
+  names(oa.tmp)[names(oa.tmp) == 'days.spent'] <- 'oa.days.spent'
+  
+  
+  lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package') %.%
+    select(methodology, lc.issue.numb, subject, estimated.days, spent.days,
+           done)
+  names(lc.tmp)[names(lc.tmp) == 'estimated.days'] <- 'lc.days.planned'
+  names(lc.tmp)[names(lc.tmp) == 'spent.days'] <- 'lc.days.spent'
+  
+  
+  merged.df <- merge(lc.tmp, oa.tmp, by = 'lc.issue.numb', all = TRUE)
+  # Add check column to highlight the source system in which a data problem exists
+  # 0: no issue
+  # 1: LC issue
+  # 2: OA issue
+  #m$check <- rep(0, dim(m)[1])
+  merged.df$check <- ifelse(is.na(merged.df$subject), 1, 
+                    ifelse(is.na(merged.df$task), 2 , 0
+                    ))
+  merged.df$methodology.x <- ifelse(is.na(merged.df$methodology.x), 
+                                         as.character(merged.df$methodology.y),
+                                         as.character(merged.df$methodology.x))
+  merged.df$subject <- ifelse(is.na(merged.df$subject), 
+                                   as.character(merged.df$task), 
+                                   as.character(merged.df$subject))
+  names(merged.df)[names(merged.df) == 'methodology.x'] <- 'methodology'
+  
+  merged.df <- select(merged.df, 
+                      check, lc.issue.numb, methodology, subject, 
+                      lc.days.planned, lc.days.spent, oa.days.planned, 
+                      oa.days.spent, done)
+  return (merged.df)
+}
+
+
+
 
 #-------------------------------------------------------------------------------
 # 2. Process OpenAir and LabCase raw data
@@ -101,6 +163,7 @@ oa.processed$methodology <- cutNamePrefix(oa.processed$methodology)
 oa.processed$methodology <- mapToAcronym(oa.processed$methodology)
 
 oa.processed <- transform(oa.processed,
+                          task = as.character(task),
                           user = gsub(" ", "", user),
                           days.planned = task.planned.hours / 8,
                           days.spent = approved.hours / 8)
@@ -108,7 +171,7 @@ oa.processed <- transform(oa.processed,
 # Extract LC WP number and store result in separate column
 oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task, 
                                                 regexec('WP ([0-9]+)', 
-                                                        as.character(oa.processed$task))),
+                                                        oa.processed$task)),
                                      function(x)x[2]))
 
 
@@ -139,7 +202,8 @@ lc.prime.tasks$methodology <- cutNamePrefix(lc.prime.tasks$methodology)
 lc.prime.tasks$methodology <- mapToAcronym(lc.prime.tasks$methodology)
 
 
-lc.prime.tasks <- mutate(lc.prime.tasks, 
+lc.prime.tasks <- mutate(lc.prime.tasks,
+                            subject = as.character(subject),
                             estimated.time = as.numeric(as.character(estimated.time)),
                             done = as.numeric(as.character(done)),
                             spent.time = (estimated.time * done) / 100,
@@ -249,6 +313,11 @@ write.csv(releaseProgressByMethodology,
 #Details page
 #
 
+# Generate merged work package status
+mergedOaLcWorkPackageStatus <- mergeLcOaWorkPackageData(oa.pro.mer, lc.prime.tasks)
+
+write.csv(mergedOaLcWorkPackageStatus,
+          file = './rOutput/megedOaLCWorkPackageStatus.csv', row.names = FALSE)
 
 
 
