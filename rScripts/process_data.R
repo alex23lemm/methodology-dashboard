@@ -127,6 +127,12 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
                       check, lc.issue.numb, methodology, subject, 
                       lc.days.planned, lc.days.spent, oa.days.planned, 
                       oa.days.spent, done)
+  merged.df$lc.days.planned[is.na(merged.df$lc.days.planned)] <- 0
+  merged.df$lc.days.spent[is.na(merged.df$lc.days.spent)] <- 0
+  merged.df$oa.days.planned[is.na(merged.df$oa.days.planned)] <- 0
+  merged.df$oa.days.spent[is.na(merged.df$oa.days.spent)] <- 0
+  merged.df$done[is.na(merged.df$done)] <- 0
+  
   return (merged.df)
 }
 
