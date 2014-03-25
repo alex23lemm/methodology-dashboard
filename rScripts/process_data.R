@@ -268,7 +268,7 @@ write.csv(totalInvestByCountry,
 
 
 
-# Generate contributers by country table
+# Create contributers by country table
 daysSpentByContributor <- oa.pro.mer %.%
                             select(user, methodology, country, days.spent, 
                                    cost_type)
@@ -291,7 +291,7 @@ write.csv(daysSpentByContributor,
 
 
 
-# Generate total days table
+# Create total days table
 totalVolDays = round(total.vol.hours/8, digits = 1)
 totalBillDays = round(total.bill.hours/8, digits = 1)
 totalDays <- as.data.frame(cbind(totalDays = totalVolDays + totalBillDays,
@@ -300,7 +300,7 @@ write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 
 
 
-# Generate release progress by methodology table
+# Create release progress by methodology table
 # Only include work package trackers; calculate overall methodology achievement 
 # in percent
 releaseProgressByMethodology <- lc.prime.tasks %.%
@@ -319,12 +319,21 @@ write.csv(releaseProgressByMethodology,
 #Details page
 #
 
-# Generate merged work package status
+# Create merged work package status table
 mergedOaLcWorkPackageStatus <- mergeLcOaWorkPackageData(oa.pro.mer, lc.prime.tasks)
 
 write.csv(mergedOaLcWorkPackageStatus,
           file = './rOutput/megedOaLCWorkPackageStatus.csv', row.names = FALSE)
 
+# Create spent days by contributor table 
+oaDaysSpentByContributor <- group_by(oa.pro.mer, methodology, lc.issue.numb, 
+                                     user) %.%
+  summarize(
+    days.spent = sum(days.spent) 
+  )
+
+write.csv(oaDaysSpentByContributor, 
+          file = './rOutput/oaDaysSpentByContributor.csv', row.names = FALSE)
 
 
 
