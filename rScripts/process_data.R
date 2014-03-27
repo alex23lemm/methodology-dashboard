@@ -63,9 +63,10 @@ mapToAcronym <- function(names){
           ifelse(names[i] == 'Business Process Analysis', 'BPA',
           ifelse(names[i] == 'Enterprise Architecture Management', 'EAM',
           ifelse(grepl('^Model to Execute', names[i]), 'M2E',
+          ifelse(grepl('^IPR', names[i]), 'IPR',
           ifelse(names[i] == 'Solution Book Support Activities', 'SB Support', 
           ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
-          names[i]))))))))))))))))))
+          names[i])))))))))))))))))))
   return (as.factor(output))
 }
 
