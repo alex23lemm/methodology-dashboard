@@ -160,6 +160,10 @@ total.bill.hours <- sum(oa.billable.raw$Approved.hours)
 oa.voluntary.raw$cost_type <- rep('V', dim(oa.voluntary.raw)[1])
 oa.billable.raw$cost_type <- rep('B', dim(oa.billable.raw)[1])
 
+# Correct possible false setup in source system
+oa.voluntary.raw$Approved.actual.cost..EUR. <- 0
+
+
 # Merge billable and voluntary project
 oa.processed <- rbind(oa.voluntary.raw, oa.billable.raw)
 
