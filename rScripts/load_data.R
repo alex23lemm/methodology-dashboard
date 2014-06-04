@@ -17,8 +17,8 @@
 # package were used to download the data.
 
 
-#-------------------------------------------------------------------------------
-# 1. Download OpenAir raw data
+
+# 1. Download OpenAir raw data -------------------------------------------------
 
 error <- FALSE
 
@@ -53,8 +53,7 @@ if (oa.voluntary.exists && !error) {
 }
 
 
-#-------------------------------------------------------------------------------
-# 2. Download LabCase raw data
+# 2. Download LabCase raw data -------------------------------------------------
 
 if (!error) {
   lc.empl.exists <- url_ok(config$url$lc_employee_list_check)
@@ -88,8 +87,9 @@ if (lcTaskExists && !error) {
 }
 
 
-#-------------------------------------------------------------------------------
-# 3. Only save data and make it available for processing when every download 
+# 3. Save the dowonloaded raw data ---------------------------------------------
+
+# Only save data and make it available for processing when every download 
 # before was successfull
 
 if (!error) {
