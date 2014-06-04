@@ -18,8 +18,8 @@ if (Sys.getenv("JAVA_HOME")!="")
   Sys.setenv(JAVA_HOME="")
 
 
-#-------------------------------------------------------------------------------
-# 1. Definition of utility functions
+
+# 1. Define utility functions---------------------------------------------------
 
 cutNamePrefix <- function(names) {
   # Cuts the prefix of the OA phase name or the LC project name
@@ -139,10 +139,7 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
 
 
 
-
-#-------------------------------------------------------------------------------
-# 2. Process OpenAir and LabCase raw data
-
+# 2. Process OpenAir and LabCase raw data --------------------------------------
 
 # Process Open Air data
 
@@ -229,11 +226,7 @@ lc.prime.tasks$spent.days[is.na(lc.prime.tasks$spent.days)] <- 0
 
                             
                                   
-#-------------------------------------------------------------------------------
-# 3.Create and save .csv files
-#
-# Overview page
-#
+# 3.1 Create and save .csv files (Overview page) -------------------------------
 
 # Calculate total investment in person days per methodology
 totalInvestByMethInPersonDays <- oa.pro.mer %.%
@@ -318,11 +311,9 @@ releaseProgressByMethodology <- lc.prime.tasks %.%
 write.csv(releaseProgressByMethodology, 
           file='./rOutput/releaseProgressByMethodolgy.csv', row.names=FALSE)
 
-#-------------------------------------------------------------------------------
-#Generation of MashZone relevant CSV files
-#
-#Details page
-#
+
+
+# 3.2 Create and save .csv files (Details page) --------------------------------
 
 # Create merged work package status table
 mergedOaLcWorkPackageStatus <- mergeLcOaWorkPackageData(oa.pro.mer, lc.prime.tasks)
