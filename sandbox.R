@@ -8,6 +8,8 @@
 
 library(RSelenium)
 library(yaml)
+library(dplyr)
+library(httr)
 
 config <- yaml.load_file('config.yml')
 
@@ -57,11 +59,26 @@ report_list[[index]]$sendKeysToElement(list(key = 'enter'))
 
 # Download report --------------------------------------------------------------
 
-remDrv$findElements("link text", 'Click here')[[1]]$sendKeysToElement(list(
-  key = 'enter'))
+download_link <- remDrv$findElements("link text", "Click here")[[1]]$getElementAttribute('href')[[1]]
+
+my_cookies <- remDrv$getAllCookies()
+my_cookies <- do.call(rbind.data.frame, my_cookies)
+my_cookies <- my_cookies %>% transmute(
+  name = as.character(name), 
+  value = as.character(value)
+  )
+
+cookies <- my_cookies$value
+names(cookies) <- my_cookies$name
+
+raw_csv <- GET(download_link, set_cookies(.cookies = cookies))
+
+parsed_csv <- content(raw_csv, 'parsed')
+write.csv(parsed_csv, 'report.csv', row.names = FALSE)
 
 remDrv$quit()
 remDrv$closeServer()
+
 
 
 
