@@ -15,6 +15,7 @@ config <- yaml.load_file('config.yml')
 
 # ID of report which should be downloaded
 report_id = 29191
+base_url = "https://www.openair.com/"
 
 # Start Selenium Server --------------------------------------------------------
 
@@ -36,26 +37,25 @@ remDrv$findElement(using = 'css selector', '.loginFormBtn')$clickElement()
 
 # Open menu and navigate to proxy user page
 remDrv$findElement(using = 'css selector', '.nav_user')$clickElement()
-remDrv$findElement(using = 'link text', 'Log in as')$sendKeysToElement(list(
-  key = 'enter'))
+proxy_page <- remDrv$findElement(using = 'xpath', "//a[contains(text(), 'Log in as')]")$getElementAttribute('href')[[1]]
+remDrv$navigate(proxy_page)
 
 # Switch to proxy user who has report execution/download rights
 remDrv$findElement(using = 'link text', config$openair$proxy)$sendKeysToElement(list(key = 'enter'))
 remDrv$switchToWindow(remDrv$getWindowHandles()[[1]][2])
 
-# Navigate to report page
+# Navigate to reports section
 remDrv$findElement(using = 'link text', 'Reports')$sendKeysToElement(list(key = 'enter'))
 remDrv$findElement(using = 'link text', 'Saved reports')$sendKeysToElement(list(key = 'enter'))
 
-report_list <- remDrv$findElements(using = 'css selector', 
-                                   '.listCell a:nth-child(2)')
-report_links <- sapply(report_list, 
-                       function(x) x$getElementAttribute('href')[[1]])
+# Identify report of choice ----------------------------------------------------
 
-# Identify report of choice in the list
+report_links <- remDrv$getPageSource()[[1]] %>% htmlParse %>% xmlRoot %>%
+  xpathSApply('//a[@title="Download"]/@href')
+
 index <- which(grepl(report_id , report_links))
-# Navigate to specific report download page
-report_list[[index]]$sendKeysToElement(list(key = 'enter'))
+
+remDrv$navigate(paste0(base_url, report_links[index]))
 
 # Download report --------------------------------------------------------------
 
@@ -71,10 +71,10 @@ my_cookies <- my_cookies %>% transmute(
 cookies <- my_cookies$value
 names(cookies) <- my_cookies$name
 
-raw_csv <- GET(download_link, set_cookies(.cookies = cookies))
+parsed_csv <- GET(download_link, set_cookies(.cookies = cookies)) %>% 
+  content('parsed')
 
-parsed_csv <- content(raw_csv, 'parsed')
-write.csv(parsed_csv, 'report.csv', row.names = FALSE)
+write.csv(parsed_csv, 'report_firefox.csv', row.names = FALSE)
 
 remDrv$quit()
 remDrv$closeServer()
