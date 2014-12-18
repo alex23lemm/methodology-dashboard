@@ -1,4 +1,4 @@
-# Purpose: The load_data.R script extracts the relevant raw data by fetching 
+# The load_data.R script extracts the relevant raw data by fetching 
 # several reports and additonal files from OpenAir and LabCase. 
 # The script aborts without saving anything should an error occur in between.
 #
@@ -7,8 +7,6 @@
 #  2. Load raw data from LabCase
 #  3. Save the dowonloaded raw data
 #
-# Google's R Style Guide (http://bit.ly/12ZBd1J) was applied while writing 
-# the code below.
 
 
 # download.file does not work with rscript.exe due to https
@@ -22,35 +20,47 @@
 
 error <- FALSE
 
-oa.billable.exists <- url_ok(config$url$oa_prime_bookable)
+report_list <- download_openair_data(c(config$openair$billable_report_id,
+                                     config$openair$voluntary_report_id))
 
-if (oa.billable.exists) {
-  url <- try(getURL(config$url$oa_prime_bookable, ssl.verifypeer = FALSE), 
-             silent = TRUE)    
-  if (class(url) == 'try-error') {
-    error <- TRUE
-  } else {
-    tmp.bookable.df <- read.csv(textConnection(url))
-  }
-} else {
+if(class(report_list) != 'list'){
   error <- TRUE
-}
-
-if (!error) {
-  oa.voluntary.exists <- url_ok(config$url$oa_prime_voluntary)
-}
-
-if (oa.voluntary.exists && !error) {
-  url <- try(getURL(config$url$oa_prime_voluntary, ssl.verifypeer = FALSE), 
-             silent = TRUE)
-  if (class(url) == 'try-error') {
-    error <- TRUE
-  } else {
-    tmp.voluntary.df <- read.csv(textConnection(url))
-  }
+  
 } else {
-  error <- TRUE
+  tmp.billable.df <- report_list[[1]]
+  tmp.voluntary.df <- report_list[[2]]
 }
+
+
+# oa.billable.exists <- url_ok(config$url$oa_prime_bookable)
+# 
+# if (oa.billable.exists) {
+#   url <- try(getURL(config$url$oa_prime_bookable, ssl.verifypeer = FALSE), 
+#              silent = TRUE)    
+#   if (class(url) == 'try-error') {
+#     error <- TRUE
+#   } else {
+#     tmp.bookable.df <- read.csv(textConnection(url))
+#   }
+# } else {
+#   error <- TRUE
+# }
+# 
+# if (!error) {
+#   oa.voluntary.exists <- url_ok(config$url$oa_prime_voluntary)
+# }
+# 
+# if (oa.voluntary.exists && !error) {
+#   url <- try(getURL(config$url$oa_prime_voluntary, ssl.verifypeer = FALSE), 
+#              silent = TRUE)
+#   if (class(url) == 'try-error') {
+#     error <- TRUE
+#   } else {
+#     tmp.voluntary.df <- read.csv(textConnection(url))
+#   }
+# } else {
+#   error <- TRUE
+# }
 
 
 # 2. Download LabCase raw data -------------------------------------------------
@@ -97,7 +107,7 @@ if (!error) {
   date <- format(now(), '%b %d, %Y %X') 
   write.csv(as.data.frame(date), file = './rOutput/dateOfRetrieval.csv', 
             row.names = FALSE)
-  write.csv(tmp.bookable.df, file = './rawData/prime_bookable.csv', 
+  write.csv(tmp.billable.df, file = './rawData/prime_bookable.csv', 
             row.names = FALSE)
   write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary.csv',
             row.names = FALSE)

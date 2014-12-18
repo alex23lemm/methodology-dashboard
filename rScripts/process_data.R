@@ -8,8 +8,6 @@
 #  2. Process OpenAir and LabCase raw data
 #  3. Create and save .csv files
 #
-# Google's R Style Guide (http://bit.ly/12ZBd1J) was applied while writing 
-# the code below.
 
 # if statement added because the rJava package referenced by the xlsx package 
 # does not work when JAVA_HOME is set on Windows Server 64 Bit 
