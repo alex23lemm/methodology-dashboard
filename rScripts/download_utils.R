@@ -5,10 +5,10 @@ download_openair_data <- function(report_ids){
   # Downloads report csv data from OpenAir
   #
   # Args:
-  #   report_id: Unique report ID
+  #   report_ids: Unique report IDs
   #        
   # Returns:
-  #   data frame containing parsed csv data
+  #   list containing parsed csv data as data frames
 
 base_url = "https://www.openair.com/"
 
@@ -33,33 +33,27 @@ remDrv$findElement(using = 'name', 'password')$sendKeysToElement(list(config$ope
 Sys.sleep(2)
 remDrv$findElement(using = 'css selector', '.loginFormBtn')$clickElement()
 Sys.sleep(2)
-print('Enter OpenAir')
-remDrv$screenshot(display=TRUE)
 
 # Open menu and navigate to proxy user page
 remDrv$findElement(using = 'css selector', '.nav_user')$clickElement()
 Sys.sleep(2)
 proxy_page <- remDrv$findElement(using = 'xpath', "//a[contains(text(), 'Log in as')]")$getElementAttribute('href')[[1]]
 remDrv$navigate(proxy_page)
-#Sys.sleep(5)
-print('Navigated to proxy user page')
-remDrv$screenshot(display=TRUE)
 
 # Continue browsing with proxy user
 remDrv$findElement(using = 'xpath', paste0("//a[text()='", config$openair$proxy, "']"))$sendKeysToElement(list(key = 'enter'))
 Sys.sleep(5)
-remDrv$switchToWindow(remDrv$getWindowHandles()[[1]][2])
-Sys.sleep(5)
-print('Switch windows')
-remDrv$screenshot(display=TRUE)
+
+window_handles <- remDrv$getWindowHandles()
+
+if (length(window_handles[[1]] == 2)) {
+  remDrv$switchToWindow(remDrv$getWindowHandles()[[1]][2])
+} 
+Sys.sleep(10)
 
 # Navigate to reports section
 remDrv$findElement(using = 'xpath', "//a[text()='Reports']")$sendKeysToElement(list(key = 'enter'))
-#Sys.sleep(10)
 remDrv$findElement(using = 'xpath', "//a[text()='Saved reports']")$sendKeysToElement(list(key = 'enter'))
-#Sys.sleep(10)
-print('Saved report page reached')
-remDrv$screenshot(display=TRUE)
 
 
 # Identify and download reports of choice --------------------------------------
@@ -83,25 +77,15 @@ report_list <- list()
 for (i in seq_along(report_ids)) {
   
   index <- which(grepl(report_ids[i] , report_links))
-  
   remDrv$navigate(paste0(base_url, report_links[index]))
-  
   Sys.sleep(5)
-  print('Navigate to final download section')
-  remDrv$screenshot(display=TRUE)
-  
   download_link <- remDrv$findElements(using = 'xpath', "//a[text()='Click here']")[[1]]$getElementAttribute('href')[[1]]
-  print(paste0('Download link: ', download_link))
-  remDrv$screenshot(display=TRUE)
-  
   parsed_csv <- GET(download_link, set_cookies(.cookies = cookies)) %>% 
     content('parsed')
-  
   report_list[[i]] <- parsed_csv
-  
-  if(i < length(report_ids))
-    remDrv$goBack()
-    
+  if (i < length(report_ids)) {
+    remDrv$goBack()  
+  }
 }
 
 remDrv$close()
