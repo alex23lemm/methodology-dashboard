@@ -20,47 +20,16 @@
 
 error <- FALSE
 
-report_list <- download_openair_data(c(config$openair$billable_report_id,
-                                     config$openair$voluntary_report_id))
+report_list <- try(download_openair_data(c(config$openair$billable_report_id,
+                                           config$openair$voluntary_report_id)),
+                   silent = TRUE)
 
-if(class(report_list) != 'list'){
+if (class(report_list) == 'try-error' | class(report_list) != 'list') {
   error <- TRUE
-  
 } else {
   tmp.billable.df <- report_list[[1]]
   tmp.voluntary.df <- report_list[[2]]
 }
-
-
-# oa.billable.exists <- url_ok(config$url$oa_prime_bookable)
-# 
-# if (oa.billable.exists) {
-#   url <- try(getURL(config$url$oa_prime_bookable, ssl.verifypeer = FALSE), 
-#              silent = TRUE)    
-#   if (class(url) == 'try-error') {
-#     error <- TRUE
-#   } else {
-#     tmp.bookable.df <- read.csv(textConnection(url))
-#   }
-# } else {
-#   error <- TRUE
-# }
-# 
-# if (!error) {
-#   oa.voluntary.exists <- url_ok(config$url$oa_prime_voluntary)
-# }
-# 
-# if (oa.voluntary.exists && !error) {
-#   url <- try(getURL(config$url$oa_prime_voluntary, ssl.verifypeer = FALSE), 
-#              silent = TRUE)
-#   if (class(url) == 'try-error') {
-#     error <- TRUE
-#   } else {
-#     tmp.voluntary.df <- read.csv(textConnection(url))
-#   }
-# } else {
-#   error <- TRUE
-# }
 
 
 # 2. Download LabCase raw data -------------------------------------------------
