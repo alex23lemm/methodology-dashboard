@@ -84,7 +84,7 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   #   1: LC data issue 
   #   2: OA data issue
   
-  oa.tmp <- group_by(oa.data.df, methodology, task, lc.issue.numb) %.%
+  oa.tmp <- group_by(oa.data.df, methodology, task, lc.issue.numb) %>%
     summarize(
       # Divide by n() (nummber of resources assigend to this task) because the 
       # total sum of days.planned for a specific task is shown for each assigend
@@ -98,7 +98,7 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   names(oa.tmp)[names(oa.tmp) == 'days.spent'] <- 'oa.days.spent'
   
   
-  lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package') %.%
+  lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package') %>%
     select(methodology, lc.issue.numb, subject, estimated.days, spent.days,
            done)
   names(lc.tmp)[names(lc.tmp) == 'estimated.days'] <- 'lc.days.planned'
@@ -227,8 +227,8 @@ lc.prime.tasks$spent.days[is.na(lc.prime.tasks$spent.days)] <- 0
 # 3.1 Create and save .csv files (Overview page) -------------------------------
 
 # Calculate total investment in person days per methodology
-totalInvestByMethInPersonDays <- oa.pro.mer %.%
-                                   group_by(methodology) %.%
+totalInvestByMethInPersonDays <- oa.pro.mer %>%
+                                   group_by(methodology) %>%
                                    summarize(
                                      daysSpent = round(sum(days.spent), 
                                                        digits = 1)
@@ -240,8 +240,8 @@ write.csv(totalInvestByMethInPersonDays,
 
 
 # Calculate total investment in K euros per methodology
-totalInvestByMethInEuros <- oa.pro.mer %.%
-                              group_by(methodology) %.%
+totalInvestByMethInEuros <- oa.pro.mer %>%
+                              group_by(methodology) %>%
                               summarize(
                                 eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
                                                    digits = 1)
@@ -252,8 +252,8 @@ write.csv(totalInvestByMethInEuros,
 
 
 # Calculate total investment in person days per methododoly per country
-totalInvestByCountry <- oa.pro.mer %.%
-                          group_by(methodology, country) %.%
+totalInvestByCountry <- oa.pro.mer %>%
+                          group_by(methodology, country) %>%
                           summarize(
                             daysSpent = round(sum(days.spent),
                                               digits=1)
@@ -265,7 +265,7 @@ write.csv(totalInvestByCountry,
 
 
 # Create contributers by country table
-daysSpentByContributor <- oa.pro.mer %.%
+daysSpentByContributor <- oa.pro.mer %>%
                             select(user, methodology, country, days.spent, 
                                    cost_type)
 # Transform long data to wide data
@@ -299,9 +299,9 @@ write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 # Create release progress by methodology table
 # Only include work package trackers; calculate overall methodology achievement 
 # in percent
-releaseProgressByMethodology <- lc.prime.tasks %.%
-                                 filter(tracker == 'Work package') %.%
-                                 group_by(methodology) %.%
+releaseProgressByMethodology <- lc.prime.tasks %>%
+                                 filter(tracker == 'Work package') %>%
+                                 group_by(methodology) %>%
                                  summarize(
                                    achievementInPercent = (sum(spent.time) / sum(estimated.time))*100
                                  )
@@ -321,7 +321,7 @@ write.csv(mergedOaLcWorkPackageStatus,
 
 # Create spent days by contributor table 
 oaDaysSpentByContributor <- group_by(oa.pro.mer, methodology, lc.issue.numb, 
-                                     user) %.%
+                                     user) %>%
   summarize(
     days.spent = sum(days.spent) 
   )
