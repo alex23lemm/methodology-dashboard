@@ -23,6 +23,7 @@ remDrv$open()
 # Enter site and navigate to reports section -----------------------------------
 
 remDrv$navigate(paste0(base_url, 'index.pl'))
+Sys.sleep(5)
 
 # Fill out login form and enter site
 remDrv$findElement(using = 'name', 'account_nickname')$sendKeysToElement(list(config$openair$company))
