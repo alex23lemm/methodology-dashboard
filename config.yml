@@ -1,9 +1,13 @@
 url:
-  oa_prime_bookable: enter_url
-  oa_prime_voluntary: enter_url
-  lc_employee_list_check: entuer_url
+  lc_employee_list_check: enter_url
   lc_employee_list: enter_url
   lc_task_list: enter_url
 credentials:
   primeuser: enter_credentials
-
+openair:
+  company: enter_name
+  user: enter_user
+  password: enter_password
+  proxy: enter_proxy_user
+  billable_report_id: enter_report_id
+  voluntary_report_id: enter_report_id
