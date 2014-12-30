@@ -20,12 +20,15 @@ The relevant ARIS BS data is provided by the server via a JavaScript report. The
 * You will need the following R libraries:
   * RCurl
   * httr
+  * XML
+  * RSelenium
+  * rvest
   * lubridate
   * yaml
   * xlsx
   * reshape2
   * dplyr
-  * RSelenium
+  * magrittr
 * [Java SE 7](http://www.java.com/en/): the xlsx package depends on Apache POI
 
 
