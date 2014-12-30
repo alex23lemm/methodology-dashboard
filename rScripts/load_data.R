@@ -20,7 +20,7 @@
 
 error <- FALSE
 
-report_list <- try(download_openair_data(c(config$openair$billable_report_id,
+report_list <- try(download_openair_data_rvest(c(config$openair$billable_report_id,
                                            config$openair$voluntary_report_id)),
                    silent = TRUE)
 
