@@ -58,13 +58,18 @@ mapToAcronym <- function(names){
           ifelse(grepl('^Training', names[i]), 'Trng Mgm',
           ifelse(names[i] == 'Business Process Management', 'BPM',
           ifelse(names[i] == 'Business Process Management ', 'BPM',
-          ifelse(names[i] == 'Business Process Analysis', 'BPA',
+          ifelse(names[i] == 'Business Process Analysis', 'BPA', 
+          ifelse(names[i] == 'Development and Maturity', 'Dev & Maturity',
+          ifelse(names[i] == 'Methodology Maturity  and Alignment', 'Alignment',
+          ifelse(names[i] == 'No phase assigned', 'No phase',        
+          ifelse(names[i] == 'Adoption Support', 'Adopt Supp',       
+          ifelse(names[i] == 'Implementation', 'Impl',           
           ifelse(names[i] == 'Enterprise Architecture Management', 'EAM',
           ifelse(grepl('^Model to Execute', names[i]), 'M2E',
           ifelse(grepl('^IPR', names[i]), 'IPR',
           ifelse(names[i] == 'Solution Book Support Activities', 'SB Support', 
           ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
-          names[i])))))))))))))))))))
+          names[i]))))))))))))))))))))))))
   return (as.factor(output))
 }
 
