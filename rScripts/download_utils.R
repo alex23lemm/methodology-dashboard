@@ -30,21 +30,26 @@ download_openair_data_rvest <- function(report_ids) {
   openair %<>% submit_form(login) %>%
     follow_link('Dashboard')
   
-  proxy_section_link <- openair %$% sub('m//d', 'm/d', url) %>%
-    paste0(";_dashboard_layout=proxy_as")
+  proxy_section_link <- html(openair) %>% 
+    html_node(xpath = "//script[contains(text(),'OA3.ui.transform.nav.header.init')]") %>%
+    xmlValue
+  proxy_section_link <- regexpr("Support(.*)dashboard.pl(.*?)proxy_as", 
+                                proxy_section_link) %>% 
+    regmatches(proxy_section_link, .)
+  proxy_section_link <- regexpr("dashboard.pl(.*?)proxy_as", 
+                                proxy_section_link) %>%
+    regmatches(proxy_section_link, .)  
+  
   
   # Continue browsing with proxy user
-  openair %<>% jump_to(proxy_section_link) %>% 
+  openair %<>% jump_to(paste0(base_url, proxy_section_link)) %>% 
     follow_link(config$openair$proxy) %>%
-    follow_link('Reports') 
-  
-  #Reached Saved reports section
-  openair %<>% jump_to(paste0(.$url, ';_report_tab_ma=saved'))
+    follow_link('Reports') %>% follow_link('Saved reports')
   
   # Identify and download reports of choice ------------------------------------
   
   my_cookies <- cookies(openair) %>% unlist
-  report_links <- paste0(openair$url, ';_report_tab_ma=saved') %>% html %>%
+  report_links <- html(openair) %>%
     xmlRoot %>% xpathSApply('//a[@title="Download"]/@href')
   report_list <- list()
   
@@ -53,7 +58,7 @@ download_openair_data_rvest <- function(report_ids) {
     index <- which(grepl(report_ids[i] , report_links))
     openair %<>% jump_to(paste0(base_url, report_links[index]))
     # Navigate to download section
-    download_url <- html(openair$url) %>% xmlRoot %>% 
+    download_url <- html(openair) %>% xmlRoot %>% 
       xpathSApply("//a[text()='Click here']/@href")
     # Download and store csv data
     parsed_csv <- GET(paste0(base_url, download_url[[1]]), 
