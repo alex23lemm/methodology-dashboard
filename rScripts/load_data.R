@@ -24,7 +24,8 @@ report_list <- try(download_openair_data_rvest(c(config$openair$billable_report_
                                            config$openair$voluntary_report_id)),
                    silent = TRUE)
 
-if (class(report_list) == 'try-error' | class(report_list) != 'list') {
+if (class(report_list) == 'try-error' | class(report_list) != 'list' |
+      sum(sapply(report_list, function(x) nrow(x) > 0)) != length(report_list)) {
   error <- TRUE
 } else {
   tmp.billable.df <- report_list[[1]]
