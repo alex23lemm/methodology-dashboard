@@ -12,7 +12,7 @@ several .csv files which are consumed by the UI layer for visualization purposes
 
 Only the first part of the application (R script) is part of the repository.
 
-The relevant ARIS BS data is provided by the server via a JavaScript report. The report is also part of this repository
+The relevant ARIS BS data is provided by the server via a JavaScript report which is also included in the repo.
 
 ## Installation
 
