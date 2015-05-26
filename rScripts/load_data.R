@@ -82,7 +82,7 @@ if (!error) {
   write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary.csv',
             row.names = FALSE)
   
-  con <- file('./rawData/employeeCountryMapping', open = 'wb')
+  con <- file('./rawData/employeeCountryMapping.xlsx', open = 'wb')
   writeBin(employee.binary, con)
   close(con)
   

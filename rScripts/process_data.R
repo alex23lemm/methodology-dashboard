@@ -12,8 +12,8 @@
 # if statement added because the rJava package referenced by the xlsx package 
 # does not work when JAVA_HOME is set on Windows Server 64 Bit 
 # see http://bit.ly/10OGlQx (stackoverflow)
-if (Sys.getenv("JAVA_HOME")!="")
-  Sys.setenv(JAVA_HOME="")
+#if (Sys.getenv("JAVA_HOME")!="")
+#  Sys.setenv(JAVA_HOME="")
 
 
 
@@ -69,7 +69,9 @@ mapToAcronym <- function(names){
           ifelse(grepl('^IPR', names[i]), 'IPR',
           ifelse(names[i] == 'Solution Book Support Activities', 'SB Support', 
           ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
-          names[i]))))))))))))))))))))))))
+          ifelse(names[i] == 'Prime/IPR/VAP Infrastructure Support', 'Infrastructure',
+          ifelse(names[i] == 'Tools & Utilities', 'Tools',
+          names[i]))))))))))))))))))))))))))
   return (as.factor(output))
 }
 
@@ -103,7 +105,7 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   names(oa.tmp)[names(oa.tmp) == 'days.spent'] <- 'oa.days.spent'
   
   
-  lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package') %>%
+  lc.tmp <- filter(lc.prime.tasks, tracker == 'Todo') %>%
     select(methodology, lc.issue.numb, subject, estimated.days, spent.days,
            done)
   names(lc.tmp)[names(lc.tmp) == 'estimated.days'] <- 'lc.days.planned'
@@ -179,9 +181,9 @@ oa.processed <- transform(oa.processed,
                           days.planned = task.planned.hours / 8,
                           days.spent = approved.hours / 8)
 
-# Extract LC WP number and store result in separate column
+# Extract LC issue number and store result in separate column
 oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task, 
-                                                regexec('WP ([0-9]+)', 
+                                                regexec('^([0-9]+)', 
                                                         oa.processed$task)),
                                      function(x)x[2]))
 
@@ -191,7 +193,7 @@ oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task,
 # Process LabCase data (employee list)
 
 # Load employee-country-mapping
-empl.country.map <- read.xlsx('./rawData/employeeCountryMapping', 
+empl.country.map <- read.xlsx('./rawData/employeeCountryMapping.xlsx', 
                             sheetIndex = 1, encoding = 'UTF-8')
 names(empl.country.map)[1] <- 'user'
 
@@ -209,12 +211,13 @@ names(lc.prime.tasks)[names(lc.prime.tasks) == 'x..done'] <- 'done'
 names(lc.prime.tasks)[names(lc.prime.tasks) == 'project'] <- 'methodology'
 names(lc.prime.tasks)[names(lc.prime.tasks) == 'x.'] <- 'lc.issue.numb'
 lc.prime.tasks$x..1 <- NULL
-lc.prime.tasks$methodology <- cutNamePrefix(lc.prime.tasks$methodology)
-lc.prime.tasks$methodology <- mapToAcronym(lc.prime.tasks$methodology)
+
 
 
 lc.prime.tasks <- mutate(lc.prime.tasks,
                             subject = as.character(subject),
+                            tracker = as.character(tracker),
+                            methodology = as.character(methodology),
                             estimated.time = as.numeric(as.character(estimated.time)),
                             done = as.numeric(as.character(done)),
                             spent.time = (estimated.time * done) / 100,
@@ -222,6 +225,23 @@ lc.prime.tasks <- mutate(lc.prime.tasks,
                             spent.days = spent.time / 8,
                             lc.issue.numb = as.numeric(as.character(lc.issue.numb))
                             )
+
+# Start: Mutate statement added for 2015 setup 
+index <- which(lc.prime.tasks$tracker == "Work package")
+
+lc.prime.tasks$methodology[index] <- lc.prime.tasks$subject[index]
+
+for(i in seq_along(1:nrow(lc.prime.tasks))){
+  if(lc.prime.tasks$tracker[i] == "Todo") {
+    lc.prime.tasks$methodology[i] <- lc.prime.tasks$methodology[i-1]
+      
+  }
+}
+# End
+
+lc.prime.tasks$methodology <- cutNamePrefix(lc.prime.tasks$methodology)
+lc.prime.tasks$methodology <- mapToAcronym(lc.prime.tasks$methodology)
+
 lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
 lc.prime.tasks$spent.time[is.na(lc.prime.tasks$spent.time)] <- 0
 lc.prime.tasks$estimated.days[is.na(lc.prime.tasks$estimated.days)] <- 0

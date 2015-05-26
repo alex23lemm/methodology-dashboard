@@ -4,6 +4,10 @@
 
 # Load libraries and utility functions -----------------------------------------
 
+if (Sys.getenv("JAVA_HOME")!="")
+  Sys.setenv(JAVA_HOME="")
+
+
 library(RCurl)
 library(httr)
 library(lubridate)
@@ -12,7 +16,10 @@ library(yaml)
 library(xlsx)
 library(reshape2)
 library(dplyr)
-library(RSelenium)
+#library(RSelenium)
+library(magrittr)
+library(rvest)
+library(XML)
 
 #setwd('C:/Program Files/ARIS MashZone/resources/prime dashboard')
 
