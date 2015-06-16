@@ -168,6 +168,13 @@ download_openair_data_rselenium <- function(report_ids){
 
 
 download_planio_report <- function() {
+  # Downloads task report Excel data from LabCase using curl
+  #
+  # Returns:
+  #   Object containing raw xls data. The object's length will be 1 if the
+  #   login failed due to wrong credentials. In case of an empty report based
+  #   on a wrong report id (second url) the object's length will be 3072 which
+  #   corresponds to an empty report with general column names.
   
   base_url <- "https://labcase.softwareag.com"
   
