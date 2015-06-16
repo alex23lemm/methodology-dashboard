@@ -51,20 +51,21 @@ if (lc.empl.exists && !error) {
   error <- TRUE
 }
 
-if (!error) {
-  lcTaskExists <- url_ok(config$url$lc_task_list)
-}
 
-if (lcTaskExists && !error) {
-  #Download task list
-  lc.tasks.binary <- try(getBinaryURL(config$url$lc_task_list, 
-                                      ssl.verifypeer = FALSE), silent = TRUE)
-  if (class(lc.tasks.binary) == 'try-error') {
+
+if (!error) {
+  # Download task list
+  # length == 1 if credentials are wrong
+  # length == 3072 if empty report is returned due to wrong link
+  lc.tasks.binary <- try(download_planio_report(), silent = TRUE)
+  
+  if (class(lc.tasks.binary) == 'try-error' || length(lc.tasks.binary) == 1 ||
+      length(lc.tasks.binary) == 3072) {
     error <- TRUE
   }
-} else {
-  error <- TRUE
 }
+
+
 
 
 # 3. Save the dowonloaded raw data ---------------------------------------------
