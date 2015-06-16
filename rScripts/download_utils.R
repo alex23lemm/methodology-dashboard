@@ -70,7 +70,7 @@ download_openair_data_rvest <- function(report_ids) {
     }
   }
   
-  return (report_list)
+  return(report_list)
   
 }
 
@@ -162,9 +162,33 @@ download_openair_data_rselenium <- function(report_ids){
   remDrv$close()
   pJS$stop() 
   
-  return (report_list)
+  return(report_list)
 }
 
 
 
-
+download_planio_report <- function() {
+  
+  base_url <- "https://labcase.softwareag.com"
+  
+  planio <- html_session(base_url)
+  
+  login <- html_form(planio) %>%
+    extract2(1) %>%
+    set_values(  
+      username = config$labcase$user,
+      password = config$labcase$password
+    )
+  
+  login$url <- base_url
+  
+  planio %<>% submit_form(login) %>% jump_to("projects/prime/issues?query_id=482")
+  
+  my_cookies <- cookies(planio) %>% unlist
+  
+  raw_report <- GET(paste0(base_url, "/projects/prime/issues.xls"), 
+                    set_cookies(.cookies = my_cookies)) %>% content('raw')
+  
+  return(raw_report)
+  
+}
