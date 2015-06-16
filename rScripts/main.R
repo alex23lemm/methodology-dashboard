@@ -21,7 +21,8 @@ library(magrittr)
 library(rvest)
 library(XML)
 
-#setwd('C:/Program Files/ARIS MashZone/resources/prime dashboard')
+#setwd("C:/SoftwareAG/ppmmashzone/server/bin/work/work_mashzone_m/mashzone_data/resources/prime dashboard")
+
 
 source('./rScripts/download_utils.R')
 config <- yaml.load_file('config.yml')
