@@ -164,23 +164,25 @@ oa.processed <- rbind(oa.voluntary.raw, oa.billable.raw)
 
 # Process merged OpenAir raw data
 names(oa.processed) <- tolower(names(oa.processed))
-names(oa.processed)[names(oa.processed) == 'phase'] <- 'methodology'
-oa.processed$methodology <- cutNamePrefix(oa.processed$methodology)
-oa.processed$methodology <- mapToAcronym(oa.processed$methodology)
 
-oa.processed <- transform(oa.processed,
-                          task = as.character(task),
-                          user = gsub(" ", "", user),
-                          days.planned = task.planned.hours / 8,
-                          days.spent = approved.hours / 8)
+oa.processed %<>% 
+  rename(
+    methodology = phase
+  ) %>% 
+  mutate(
+    methodology = cutNamePrefix(methodology),
+    methodology = mapToAcronym(methodology),
+    task = as.character(task),
+    user = gsub(" ", "", user),
+    days.planned = task.planned.hours / 8,
+    days.spent = approved.hours / 8
+  )
 
 # Extract LC issue number and store result in separate column
 oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task, 
                                                 regexec('^([0-9]+)', 
                                                         oa.processed$task)),
                                      function(x)x[2]))
-
-
 
 
 # Process LabCase data (employee list)
@@ -198,19 +200,20 @@ lc.prime.tasks <- read_excel('./rawData/lcPrimeTasks.xls')
 lc.prime.tasks[1] <- NULL
 colnames(lc.prime.tasks) <- make.names(colnames(lc.prime.tasks)) %>% tolower
 
-lc.prime.tasks %<>% rename(
-  done = x..done,
-  methodology = project,
-  lc.issue.numb = x.
-  ) %>% mutate(
-  estimated.time = as.numeric(estimated.time),
-  done = as.numeric(done),
-  spent.time = (estimated.time * done) / 100,
-  estimated.days = estimated.time / 8, 
-  spent.days = spent.time / 8,
-  lc.issue.numb = as.numeric(lc.issue.numb)
+lc.prime.tasks %<>% 
+  rename(
+    done = x..done,
+    methodology = project,
+    lc.issue.numb = x.
+  ) %>% 
+  mutate(
+    estimated.time = as.numeric(estimated.time),
+    done = as.numeric(done),
+    spent.time = (estimated.time * done) / 100,
+    estimated.days = estimated.time / 8, 
+    spent.days = spent.time / 8,
+    lc.issue.numb = as.numeric(lc.issue.numb)
   )
-
 
 # Start: Added for 2015 setup 
 index <- which(lc.prime.tasks$tracker == "Work package")
@@ -225,8 +228,11 @@ for (i in seq_along(1:nrow(lc.prime.tasks))){
 }
 # End
 
-lc.prime.tasks$methodology <- cutNamePrefix(lc.prime.tasks$methodology)
-lc.prime.tasks$methodology <- mapToAcronym(lc.prime.tasks$methodology)
+lc.prime.tasks %<>%
+  mutate(
+    methodology = cutNamePrefix(methodology),
+    methodology = mapToAcronym(methodology)
+  )
 
 lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
 lc.prime.tasks$spent.time[is.na(lc.prime.tasks$spent.time)] <- 0
