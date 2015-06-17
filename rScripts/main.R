@@ -4,16 +4,13 @@
 
 # Load libraries and utility functions -----------------------------------------
 
-if (Sys.getenv("JAVA_HOME")!="")
-  Sys.setenv(JAVA_HOME="")
-
 
 library(RCurl)
 library(httr)
 library(lubridate)
 library(yaml)
 
-library(xlsx)
+library(readxl)
 library(reshape2)
 library(dplyr)
 #library(RSelenium)
@@ -22,7 +19,6 @@ library(rvest)
 library(XML)
 
 #setwd("C:/SoftwareAG/ppmmashzone/server/bin/work/work_mashzone_m/mashzone_data/resources/prime dashboard")
-
 
 source('./rScripts/download_utils.R')
 config <- yaml.load_file('config.yml')

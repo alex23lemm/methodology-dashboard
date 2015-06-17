@@ -9,13 +9,6 @@
 #  3. Create and save .csv files
 #
 
-# if statement added because the rJava package referenced by the xlsx package 
-# does not work when JAVA_HOME is set on Windows Server 64 Bit 
-# see http://bit.ly/10OGlQx (stackoverflow)
-#if (Sys.getenv("JAVA_HOME")!="")
-#  Sys.setenv(JAVA_HOME="")
-
-
 
 # 1. Define utility functions---------------------------------------------------
 
@@ -30,7 +23,7 @@ cutNamePrefix <- function(names) {
   # Returns:
   #   Vector with full methodology names
   output <- gsub('^(Prime for |Prime |Prime - |Prime-|2014 Prime for )', "", names)
-  return (output)
+  return(output)
 }
 
 
@@ -44,7 +37,7 @@ mapToAcronym <- function(names){
   # Returns:
   #   Vector with abbreviated methodology names
   output <- rep(NA, length(names))
-  for(i in 1:length(names))
+  for (i in 1:length(names))
     output[i] <- ifelse(names[i] == 'Process Improvement Methodology', 'General',
           ifelse(names[i] == 'Governance Risk and Compliance', 'GRC',
           ifelse(names[i] == 'Project Management', 'PM',
@@ -72,7 +65,7 @@ mapToAcronym <- function(names){
           ifelse(names[i] == 'Prime/IPR/VAP Infrastructure Support', 'Infrastructure',
           ifelse(names[i] == 'Tools & Utilities', 'Tools',
           names[i]))))))))))))))))))))))))))
-  return (as.factor(output))
+  return(as.factor(output))
 }
 
 
@@ -139,7 +132,7 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   merged.df$oa.days.spent[is.na(merged.df$oa.days.spent)] <- 0
   merged.df$done[is.na(merged.df$done)] <- 0
   
-  return (merged.df)
+  return(merged.df)
 }
 
 
@@ -149,9 +142,9 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
 # Process Open Air data
 
 oa.voluntary.raw <- read.csv('./rawData/prime_voluntary.csv', 
-                             header=TRUE, encoding='UTF-8')
+                             header = TRUE, encoding = 'UTF-8')
 oa.billable.raw <- read.csv('./rawData/prime_bookable.csv',
-                            header=TRUE, encoding='UTF-8')
+                            header = TRUE, encoding = 'UTF-8')
 
 # Extract total billable and total voluntary hours spent
 total.vol.hours <- sum(oa.voluntary.raw$Approved.hours)
@@ -193,47 +186,40 @@ oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task,
 # Process LabCase data (employee list)
 
 # Load employee-country-mapping
-empl.country.map <- read.xlsx('./rawData/employeeCountryMapping.xlsx', 
-                            sheetIndex = 1, encoding = 'UTF-8')
+empl.country.map <- read_excel('./rawData/employeeCountryMapping.xlsx')
 names(empl.country.map)[1] <- 'user'
 
 # Merge OpenAir report with employee/country excel file
-oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'), all.x=TRUE)
-
-
+oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'), 
+                    all.x = TRUE)
 
 # Process LabCase data (project list)
+lc.prime.tasks <- read_excel('./rawData/lcPrimeTasks.xls')
+lc.prime.tasks[1] <- NULL
+colnames(lc.prime.tasks) <- make.names(colnames(lc.prime.tasks)) %>% tolower
 
-lc.prime.tasks <- read.xlsx('./rawData/lcPrimeTasks.xls',
-                            sheetIndex = 1, encoding = 'UTF-8')
-names(lc.prime.tasks) <- tolower(names(lc.prime.tasks))
-names(lc.prime.tasks)[names(lc.prime.tasks) == 'x..done'] <- 'done'
-names(lc.prime.tasks)[names(lc.prime.tasks) == 'project'] <- 'methodology'
-names(lc.prime.tasks)[names(lc.prime.tasks) == 'x.'] <- 'lc.issue.numb'
-lc.prime.tasks$x..1 <- NULL
+lc.prime.tasks %<>% rename(
+  done = x..done,
+  methodology = project,
+  lc.issue.numb = x.
+  ) %>% mutate(
+  estimated.time = as.numeric(estimated.time),
+  done = as.numeric(done),
+  spent.time = (estimated.time * done) / 100,
+  estimated.days = estimated.time / 8, 
+  spent.days = spent.time / 8,
+  lc.issue.numb = as.numeric(lc.issue.numb)
+  )
 
 
-
-lc.prime.tasks <- mutate(lc.prime.tasks,
-                            subject = as.character(subject),
-                            tracker = as.character(tracker),
-                            methodology = as.character(methodology),
-                            estimated.time = as.numeric(as.character(estimated.time)),
-                            done = as.numeric(as.character(done)),
-                            spent.time = (estimated.time * done) / 100,
-                            estimated.days = estimated.time / 8, 
-                            spent.days = spent.time / 8,
-                            lc.issue.numb = as.numeric(as.character(lc.issue.numb))
-                            )
-
-# Start: Mutate statement added for 2015 setup 
+# Start: Added for 2015 setup 
 index <- which(lc.prime.tasks$tracker == "Work package")
 
 lc.prime.tasks$methodology[index] <- lc.prime.tasks$subject[index]
 
-for(i in seq_along(1:nrow(lc.prime.tasks))){
-  if(lc.prime.tasks$tracker[i] == "Todo") {
-    lc.prime.tasks$methodology[i] <- lc.prime.tasks$methodology[i-1]
+for (i in seq_along(1:nrow(lc.prime.tasks))){
+  if (lc.prime.tasks$tracker[i] == "Todo") {
+    lc.prime.tasks$methodology[i] <- lc.prime.tasks$methodology[i - 1]
       
   }
 }
@@ -281,7 +267,7 @@ totalInvestByCountry <- oa.pro.mer %>%
                           group_by(methodology, country) %>%
                           summarize(
                             daysSpent = round(sum(days.spent),
-                                              digits=1)
+                                              digits = 1)
                             )
 write.csv(totalInvestByCountry, 
           file = './rOutput/totalInvestByCountryInPersonDays.csv', 
@@ -332,7 +318,7 @@ releaseProgressByMethodology <- lc.prime.tasks %>%
                                  )
 
 write.csv(releaseProgressByMethodology, 
-          file='./rOutput/releaseProgressByMethodolgy.csv', row.names=FALSE)
+          file = './rOutput/releaseProgressByMethodolgy.csv', row.names = FALSE)
 
 
 
