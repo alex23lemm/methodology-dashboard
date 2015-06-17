@@ -25,12 +25,10 @@ The relevant ARIS BS data is provided by the server via a JavaScript report whic
   * rvest
   * lubridate
   * yaml
-  * xlsx
+  * readxl
   * reshape2
   * dplyr
   * magrittr
-* [Java SE 7](http://www.java.com/en/): the xlsx package depends on Apache POI
-
 
 The following are installation instructions for Windows:
 
