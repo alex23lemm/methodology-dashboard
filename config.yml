@@ -1,13 +1,18 @@
 url:
-  lc_employee_list_check: enter_url
-  lc_employee_list: enter_url
-  lc_task_list: enter_url
+  lc_employee_list_check: add_url
+  lc_employee_list: add_url
 credentials:
-  primeuser: enter_credentials
+  primeuser: add_credentials
 openair:
-  company: enter_name
-  user: enter_user
-  password: enter_password
-  proxy: enter_proxy_user
-  billable_report_id: enter_report_id
-  voluntary_report_id: enter_report_id
+  company: add_name
+  user: add_user
+  password: add_password
+  proxy: add_proxy_user
+  billable_report_id: add_report_id
+  voluntary_report_id: add_report_id
+labcase:
+  user: add_username
+  password: add_password
+  
+  
+
