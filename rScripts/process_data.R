@@ -64,7 +64,9 @@ mapToAcronym <- function(names){
           ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
           ifelse(names[i] == 'Prime/IPR/VAP Infrastructure Support', 'Infrastructure',
           ifelse(names[i] == 'Tools & Utilities', 'Tools',
-          names[i]))))))))))))))))))))))))))
+          ifelse(grepl('^ETS', names[i]), 'ETS', 
+          ifelse(grepl('JumpStart', names[i]), 'JumpStart', 
+          names[i]))))))))))))))))))))))))))))
   return(as.factor(output))
 }
 
