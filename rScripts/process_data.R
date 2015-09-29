@@ -26,6 +26,29 @@ cutNamePrefix <- function(names) {
   return(output)
 }
 
+map_name_to_acronym <- function(names, mapping) {
+  # Maps the complete methodology names to an abbreviated version of the name
+  #
+  # Args:
+  #   names: character vector containing the complete methodology names
+  #   mapping: character vector containing the mapping rules. Each entry has
+  #            the following form "full name, acronym"
+  #         
+  # Returns:
+  #   Vector with abbreviated methodology names
+  
+  full_names <- str_extract(mapping, '^.*,') %>%
+    str_sub(1, str_length(.) - 1) %>%
+    str_trim(side = "both")
+  
+  acronyms <- str_extract(mapping, ",.*") %>%
+    str_sub(2, str_length(.)) %>%
+    str_trim(side = "both")
+  
+  return(mapvalues(names, full_names, acronyms, warn_missing = FALSE))
+  
+}
+
 
 mapToAcronym <- function(names){
   # Maps the complete methodology names to an abbreviated version of the name
@@ -173,7 +196,7 @@ oa.processed %<>%
   ) %>% 
   mutate(
     methodology = cutNamePrefix(methodology),
-    methodology = mapToAcronym(methodology),
+    methodology = map_name_to_acronym(methodology, config$mapping),
     task = as.character(task),
     user = gsub(" ", "", user),
     days.planned = task.planned.hours / 8,
@@ -233,7 +256,7 @@ for (i in seq_along(1:nrow(lc.prime.tasks))){
 lc.prime.tasks %<>%
   mutate(
     methodology = cutNamePrefix(methodology),
-    methodology = mapToAcronym(methodology)
+    methodology = map_name_to_acronym(methodology, config$mapping)
   )
 
 lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0

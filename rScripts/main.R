@@ -12,11 +12,13 @@ library(yaml)
 
 library(readxl)
 library(reshape2)
+library(plyr)
 library(dplyr)
 #library(RSelenium)
 library(magrittr)
 library(rvest)
 library(XML)
+library(stringr)
 
 #setwd("C:/SoftwareAG/ppmmashzone/server/bin/work/work_mashzone_m/mashzone_data/resources/prime dashboard")
 

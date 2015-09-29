@@ -27,8 +27,10 @@ The relevant ARIS BS data is provided by the server via a JavaScript report whic
   * yaml
   * readxl
   * reshape2
+  * plyr
   * dplyr
   * magrittr
+  * stringr
 
 The following are installation instructions for Windows:
 
