@@ -26,6 +26,7 @@ cutNamePrefix <- function(names) {
   return(output)
 }
 
+
 map_name_to_acronym <- function(names, mapping) {
   # Maps the complete methodology names to an abbreviated version of the name
   #
@@ -50,48 +51,48 @@ map_name_to_acronym <- function(names, mapping) {
 }
 
 
-mapToAcronym <- function(names){
-  # Maps the complete methodology names to an abbreviated version of the name
-  #
-  # Args:
-  #   names: character vector containing the complete methodology names 
-  #         
-  # 
-  # Returns:
-  #   Vector with abbreviated methodology names
-  output <- rep(NA, length(names))
-  for (i in 1:length(names))
-    output[i] <- ifelse(names[i] == 'Process Improvement Methodology', 'General',
-          ifelse(names[i] == 'Governance Risk and Compliance', 'GRC',
-          ifelse(names[i] == 'Project Management', 'PM',
-          ifelse(names[i] == 'Cockpit and Prime-to-Go', 'Ckpt and PtG',
-          ifelse(names[i] == 'Project Governance', 'Project Gov',
-          ifelse(names[i] == 'Master Data Management', 'MDM',
-          ifelse(names[i] == 'Enterprise Integration', 'EI',
-          ifelse(names[i] == 'Process Intelligence', 'PI',
-          ifelse(names[i] == 'Process-driven SAP Management', 'PDSAP',
-          ifelse(names[i] == 'Process-Driven SAP Management', 'PDSAP',
-          ifelse(grepl('^Training', names[i]), 'Trng Mgm',
-          ifelse(names[i] == 'Business Process Management', 'BPM',
-          ifelse(names[i] == 'Business Process Management ', 'BPM',
-          ifelse(names[i] == 'Business Process Analysis', 'BPA', 
-          ifelse(names[i] == 'Development and Maturity', 'Dev & Maturity',
-          ifelse(names[i] == 'Methodology Maturity  and Alignment', 'Alignment',
-          ifelse(names[i] == 'No phase assigned', 'No phase',        
-          ifelse(names[i] == 'Adoption Support', 'Adopt Supp',       
-          ifelse(names[i] == 'Implementation', 'Impl',           
-          ifelse(names[i] == 'Enterprise Architecture Management', 'EAM',
-          ifelse(grepl('^Model to Execute', names[i]), 'M2E',
-          ifelse(grepl('^IPR', names[i]), 'IPR',
-          ifelse(names[i] == 'Solution Book Support Activities', 'SB Support', 
-          ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
-          ifelse(names[i] == 'Prime/IPR/VAP Infrastructure Support', 'Infrastructure',
-          ifelse(names[i] == 'Tools & Utilities', 'Tools',
-          ifelse(grepl('^ETS', names[i]), 'ETS', 
-          ifelse(grepl('JumpStart', names[i]), 'JumpStart', 
-          names[i]))))))))))))))))))))))))))))
-  return(as.factor(output))
-}
+# mapToAcronym <- function(names){
+#   # Maps the complete methodology names to an abbreviated version of the name
+#   #
+#   # Args:
+#   #   names: character vector containing the complete methodology names 
+#   #         
+#   # 
+#   # Returns:
+#   #   Vector with abbreviated methodology names
+#   output <- rep(NA, length(names))
+#   for (i in 1:length(names))
+#     output[i] <- ifelse(names[i] == 'Process Improvement Methodology', 'General',
+#           ifelse(names[i] == 'Governance Risk and Compliance', 'GRC',
+#           ifelse(names[i] == 'Project Management', 'PM',
+#           ifelse(names[i] == 'Cockpit and Prime-to-Go', 'Ckpt and PtG',
+#           ifelse(names[i] == 'Project Governance', 'Project Gov',
+#           ifelse(names[i] == 'Master Data Management', 'MDM',
+#           ifelse(names[i] == 'Enterprise Integration', 'EI',
+#           ifelse(names[i] == 'Process Intelligence', 'PI',
+#           ifelse(names[i] == 'Process-driven SAP Management', 'PDSAP',
+#           ifelse(names[i] == 'Process-Driven SAP Management', 'PDSAP',
+#           ifelse(grepl('^Training', names[i]), 'Trng Mgm',
+#           ifelse(names[i] == 'Business Process Management', 'BPM',
+#           ifelse(names[i] == 'Business Process Management ', 'BPM',
+#           ifelse(names[i] == 'Business Process Analysis', 'BPA', 
+#           ifelse(names[i] == 'Development and Maturity', 'Dev & Maturity',
+#           ifelse(names[i] == 'Methodology Maturity  and Alignment', 'Alignment',
+#           ifelse(names[i] == 'No phase assigned', 'No phase',        
+#           ifelse(names[i] == 'Adoption Support', 'Adopt Supp',       
+#           ifelse(names[i] == 'Implementation', 'Impl',           
+#           ifelse(names[i] == 'Enterprise Architecture Management', 'EAM',
+#           ifelse(grepl('^Model to Execute', names[i]), 'M2E',
+#           ifelse(grepl('^IPR', names[i]), 'IPR',
+#           ifelse(names[i] == 'Solution Book Support Activities', 'SB Support', 
+#           ifelse(names[i] == 'webMethods Upgrades', 'wM Upgrades',
+#           ifelse(names[i] == 'Prime/IPR/VAP Infrastructure Support', 'Infrastructure',
+#           ifelse(names[i] == 'Tools & Utilities', 'Tools',
+#           ifelse(grepl('^ETS', names[i]), 'ETS', 
+#           ifelse(grepl('JumpStart', names[i]), 'JumpStart', 
+#           names[i]))))))))))))))))))))))))))))
+#   return(as.factor(output))
+# }
 
 
 mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
@@ -151,11 +152,20 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
                       check, lc.issue.numb, methodology, subject, 
                       lc.days.planned, lc.days.spent, oa.days.planned, 
                       oa.days.spent, done)
-  merged.df$lc.days.planned[is.na(merged.df$lc.days.planned)] <- 0
-  merged.df$lc.days.spent[is.na(merged.df$lc.days.spent)] <- 0
-  merged.df$oa.days.planned[is.na(merged.df$oa.days.planned)] <- 0
-  merged.df$oa.days.spent[is.na(merged.df$oa.days.spent)] <- 0
-  merged.df$done[is.na(merged.df$done)] <- 0
+  
+  merged.df %<>% replace_na(list(
+    lc.days.planned = 0,
+    lc.days.spent = 0,
+    oa.days.planned = 0,
+    oa.days.spent = 0,
+    done = 0
+  ))
+  
+#   merged.df$lc.days.planned[is.na(merged.df$lc.days.planned)] <- 0
+#   merged.df$lc.days.spent[is.na(merged.df$lc.days.spent)] <- 0
+#   merged.df$oa.days.planned[is.na(merged.df$oa.days.planned)] <- 0
+#   merged.df$oa.days.spent[is.na(merged.df$oa.days.spent)] <- 0
+#   merged.df$done[is.na(merged.df$done)] <- 0
   
   return(merged.df)
 }
@@ -245,10 +255,9 @@ index <- which(lc.prime.tasks$tracker == "Work package")
 
 lc.prime.tasks$methodology[index] <- lc.prime.tasks$subject[index]
 
-for (i in seq_along(1:nrow(lc.prime.tasks))){
+for (i in seq_along(1:nrow(lc.prime.tasks))) {
   if (lc.prime.tasks$tracker[i] == "Todo") {
     lc.prime.tasks$methodology[i] <- lc.prime.tasks$methodology[i - 1]
-      
   }
 }
 # End
@@ -259,10 +268,17 @@ lc.prime.tasks %<>%
     methodology = map_name_to_acronym(methodology, config$mapping)
   )
 
-lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
-lc.prime.tasks$spent.time[is.na(lc.prime.tasks$spent.time)] <- 0
-lc.prime.tasks$estimated.days[is.na(lc.prime.tasks$estimated.days)] <- 0
-lc.prime.tasks$spent.days[is.na(lc.prime.tasks$spent.days)] <- 0
+#lc.prime.tasks$estimated.time[is.na(lc.prime.tasks$estimated.time)] <- 0
+#lc.prime.tasks$spent.time[is.na(lc.prime.tasks$spent.time)] <- 0
+#lc.prime.tasks$estimated.days[is.na(lc.prime.tasks$estimated.days)] <- 0
+#lc.prime.tasks$spent.days[is.na(lc.prime.tasks$spent.days)] <- 0
+
+lc.prime.tasks %<>% replace_na(list(
+  estimated.time = 0,
+  spent.time = 0,
+  estimated.days = 0,
+  spent.days = 0
+))
 
                             
                                   
