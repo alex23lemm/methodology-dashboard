@@ -22,7 +22,7 @@ download_openair_data_rvest <- function(report_ids) {
     set_values(
       account_nickname = config$openair$company,
       user_nickname = config$openair$user,
-      password = config$openair$password
+      password = "Nase2015"
     )
   
   login$url <- 'https://www.openair.com/index.pl'
@@ -30,9 +30,9 @@ download_openair_data_rvest <- function(report_ids) {
   openair %<>% submit_form(login) %>%
     follow_link('Dashboard')
   
-  proxy_section_link <- html(openair) %>% 
+  proxy_section_link <- read_html(openair) %>% 
     html_node(xpath = "//script[contains(text(),'OA3.ui.transform.nav.header.init')]") %>%
-    xmlValue
+    html_text
   proxy_section_link <- regexpr("Support(.*)dashboard.pl(.*?)proxy_as", 
                                 proxy_section_link) %>% 
     regmatches(proxy_section_link, .)
@@ -48,9 +48,9 @@ download_openair_data_rvest <- function(report_ids) {
   
   # Identify and download reports of choice ------------------------------------
   
-  my_cookies <- cookies(openair) %>% unlist
-  report_links <- html(openair) %>%
-    xmlRoot %>% xpathSApply('//a[@title="Download"]/@href')
+  report_links <- read_html(openair) %>%
+    html_nodes(xpath = '//a[@title="Download"]/@href') %>%
+    html_text
   report_list <- list()
   
   for (i in seq_along(report_ids)) {
@@ -58,20 +58,18 @@ download_openair_data_rvest <- function(report_ids) {
     index <- which(grepl(report_ids[i] , report_links))
     openair %<>% jump_to(paste0(base_url, report_links[index]))
     # Navigate to download section
-    download_url <- html(openair) %>% xmlRoot %>% 
-      xpathSApply("//a[text()='Click here']/@href")
+    download_url <- read_html(openair) %>%  
+      html_nodes(xpath = "//a[text()='Click here']/@href") %>%
+      html_text
     # Download and store csv data
-    parsed_csv <- GET(paste0(base_url, download_url[[1]]), 
-                      set_cookies(.cookies = my_cookies)) %>% content('parsed')
-    report_list[[i]] <- parsed_csv
+    parsed_csv <- openair %>% 
+      jump_to(paste0(base_url, download_url[[1]])) %$%
+      response %>% content("parsed")
     
-    if (i < length(report_ids)) {
-      openair %<>% back
-    }
+    report_list[[i]] <- parsed_csv
   }
   
   return(report_list)
-  
 }
 
 
@@ -105,7 +103,7 @@ download_openair_data_rselenium <- function(report_ids){
   remDrv$findElement(using = 'name', 'password')$sendKeysToElement(list(config$openair$password))
   Sys.sleep(2)
   remDrv$findElement(using = 'css selector', '.loginFormBtn')$clickElement()
-  Sys.sleep(2)
+  Sys.sleep(5)
   
   # Open menu and navigate to proxy user page
   remDrv$findElement(using = 'css selector', '.nav_user')$clickElement()
@@ -166,6 +164,102 @@ download_openair_data_rselenium <- function(report_ids){
 }
 
 
+download_openair_data_mix <- function(report_ids) {
+  # Downloads report csv data from OpenAir using RSelenium and curl.
+  # The login is performed using RSelenium. After that the cookies are extracted
+  # and passed on to a rvest ssession object
+  #
+  # Args:
+  #   report_ids: Unique report IDs
+  #        
+  # Returns:
+  #   list containing parsed csv data as data frames
+  
+  base_url = "https://www.openair.com/"
+  
+  pJS <- phantom(extras = c('--ignore-ssl-errors=yes', '--ssl-protocol=tlsv1'))
+  Sys.sleep(5) 
+  remDrv <- remoteDriver(browserName = 'phantomjs')
+  Sys.sleep(5)
+  remDrv$open()
+  Sys.sleep(5) 
+  
+  # Simulate browser session and navigate to report download section -------------
+  
+  remDrv$navigate('https://www.openair.com/index.pl')
+  Sys.sleep(5)
+  
+  # Fill out and submit form
+  remDrv$findElement(using = 'name', 'account_nickname')$sendKeysToElement(list(config$openair$company))
+  Sys.sleep(5)
+  remDrv$findElement(using = 'name', 'user_nickname')$sendKeysToElement(list(config$openair$user))
+  Sys.sleep(5)
+  remDrv$findElement(using = 'name', 'password')$sendKeysToElement(list(config$openair$password))
+  Sys.sleep(5)
+  remDrv$findElement(using = 'css selector', '.loginFormBtn')$clickElement()
+  Sys.sleep(15)
+  
+  # Extract cookies and pass them to rvest session object
+  my_cookies <- remDrv$getAllCookies()
+  Sys.sleep(10)
+  
+  my_cookies <- do.call(rbind.data.frame, my_cookies)
+  my_cookies <- my_cookies %>% transmute(
+    name = as.character(name), 
+    value = as.character(value)
+  )
+  
+  cookies <- my_cookies$value
+  names(cookies) <- my_cookies$name
+  
+  openair <- html_session(remDrv$getCurrentUrl()[[1]], set_cookies(.cookies = cookies))
+  
+  # Stop phantom session and continue with curl
+  remDrv$close()
+  pJS$stop() 
+
+  openair %<>% follow_link('Dashboard')
+  
+  proxy_section_link <- read_html(openair) %>% 
+    html_node(xpath = "//script[contains(text(),'OA3.ui.transform.nav.header.init')]") %>%
+    html_text
+  proxy_section_link <- regexpr("Support(.*)dashboard.pl(.*?)proxy_as", 
+                                proxy_section_link) %>% 
+    regmatches(proxy_section_link, .)
+  proxy_section_link <- regexpr("dashboard.pl(.*?)proxy_as", 
+                                proxy_section_link) %>%
+    regmatches(proxy_section_link, .)  
+  
+  
+  # Continue browsing with proxy user
+  openair %<>% jump_to(paste0(base_url, proxy_section_link)) %>% 
+    follow_link(config$openair$proxy) %>%
+    follow_link('Reports') %>% follow_link('Saved reports')
+  
+  # Identify and download reports of choice ------------------------------------
+  
+  report_links <- read_html(openair) %>%
+    html_nodes(xpath = '//a[@title="Download"]/@href') %>% html_text
+  report_list <- list()
+  
+  for (i in seq_along(report_ids)) {
+    
+    index <- which(grepl(report_ids[i] , report_links))
+    openair %<>% jump_to(paste0(base_url, report_links[index]))
+    # Navigate to download section
+    download_url <- read_html(openair) %>% 
+      html_nodes(xpath = "//a[text()='Click here']/@href") %>% html_text
+    # Download and store csv data
+    parsed_csv <- openair %>% 
+      jump_to(paste0(base_url, download_url[[1]])) %$%
+      response %>% content("parsed")
+    
+    report_list[[i]] <- parsed_csv
+  }
+  return(report_list)
+}
+
+
 
 download_planio_report <- function() {
   # Downloads task report Excel data from LabCase using curl
@@ -197,5 +291,4 @@ download_planio_report <- function() {
                     set_cookies(.cookies = my_cookies)) %>% content('raw')
   
   return(raw_report)
-  
 }
