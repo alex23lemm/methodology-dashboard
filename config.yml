@@ -1,18 +1,21 @@
 url:
-  lc_employee_list_check: add_url
-  lc_employee_list: add_url
+  lc_employee_list_check: 
+  lc_employee_list: 
 credentials:
-  primeuser: add_credentials
+  primeuser: 
 openair:
-  company: add_name
-  user: add_user
-  password: add_password
-  proxy: add_proxy_user
-  billable_report_id: add_report_id
-  voluntary_report_id: add_report_id
+  company: 
+  user: 
+  password:
+  proxy: 
+  billable_report_id: 
+  voluntary_report_id: 
 labcase:
-  user: add_username
-  password: add_password
-  
-  
-
+  user:
+  password: 
+  api_key: 
+  project_name: 
+  report_id:
+mapping:
+  - full_name1, acronym1
+  - full_name2, acronym2

@@ -181,25 +181,24 @@ names(empl.country.map)[1] <- 'user'
 oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'), 
                     all.x = TRUE)
 
-# Process LabCase data (project list)
-lc.prime.tasks <- read_excel('./rawData/lcPrimeTasks.xls')
-lc.prime.tasks[1] <- NULL
-colnames(lc.prime.tasks) <- make.names(colnames(lc.prime.tasks)) %>% tolower
 
-lc.prime.tasks %<>% 
-  rename(
-    done = x..done,
-    methodology = project,
-    lc.issue.numb = x.
-  ) %>% 
-  mutate(
-    estimated.time = as.numeric(estimated.time),
-    done = as.numeric(done),
+
+# Process LabCase data (task list)
+
+lc.prime.tasks <- jsonlite::fromJSON("./rawData/lc_tasks.json", flatten = TRUE) %>%
+  extract2(1) %>%
+  transmute(
+    methodology = project.name,
+    tracker = tracker.name,
+    subject = subject,
+    estimated.time = as.numeric(estimated_hours),
+    done = as.numeric(done_ratio),
     spent.time = (estimated.time * done) / 100,
     estimated.days = estimated.time / 8, 
     spent.days = spent.time / 8,
-    lc.issue.numb = as.numeric(lc.issue.numb)
+    lc.issue.numb = as.numeric(id)
   )
+
 
 # Start: Added for 2015 setup 
 index <- which(lc.prime.tasks$tracker == "Work package")

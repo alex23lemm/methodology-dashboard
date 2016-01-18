@@ -20,7 +20,7 @@
 
 error <- FALSE
 
-report_list <- try(download_openair_data_rvest(c(config$openair$billable_report_id,
+report_list <- try(download_openair_data_mix(c(config$openair$billable_report_id,
                                            config$openair$voluntary_report_id)),
                    silent = TRUE)
 
@@ -55,17 +55,14 @@ if (lc.empl.exists && !error) {
 
 if (!error) {
   # Download task list
-  # length == 1 if credentials are wrong
-  # length == 3072 if empty report is returned due to wrong link
-  lc.tasks.binary <- try(download_planio_report(), silent = TRUE)
+  lc_tasks <- try(download_planio_report(config$labcase$report_id,
+                                         config$labcase$project_name,
+                                         config$labcase$api_key), silent = TRUE)
   
-  if (class(lc.tasks.binary) == 'try-error' || length(lc.tasks.binary) == 1 ||
-      length(lc.tasks.binary) == 3072) {
+  if (class(lc_tasks) == 'try-error') {
     error <- TRUE
   }
 }
-
-
 
 
 # 3. Save the dowonloaded raw data ---------------------------------------------
@@ -87,7 +84,7 @@ if (!error) {
   writeBin(employee.binary, con)
   close(con)
   
-  con <- file('./rawData/lcPrimeTasks.xls', open = 'wb')
-  writeBin(lc.tasks.binary, con)
+  con <- file('./rawData/lc_tasks.json', open ='wt')
+  write(lc_tasks, con)
   close(con)
 }

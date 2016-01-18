@@ -13,7 +13,7 @@ download_openair_data_rvest <- function(report_ids) {
   
   base_url = "https://www.openair.com/"
   openair <- html_session(paste0(base_url, 'index.pl'))
- 
+  
   # Enter site and navigate to reports section ---------------------------------
   
   # Fill out login form and enter site
@@ -22,7 +22,7 @@ download_openair_data_rvest <- function(report_ids) {
     set_values(
       account_nickname = config$openair$company,
       user_nickname = config$openair$user,
-      password = "Nase2015"
+      password = config$openair$password
     )
   
   login$url <- 'https://www.openair.com/index.pl'
@@ -30,9 +30,9 @@ download_openair_data_rvest <- function(report_ids) {
   openair %<>% submit_form(login) %>%
     follow_link('Dashboard')
   
-  proxy_section_link <- read_html(openair) %>% 
+  proxy_section_link <- html(openair) %>% 
     html_node(xpath = "//script[contains(text(),'OA3.ui.transform.nav.header.init')]") %>%
-    html_text
+    xmlValue
   proxy_section_link <- regexpr("Support(.*)dashboard.pl(.*?)proxy_as", 
                                 proxy_section_link) %>% 
     regmatches(proxy_section_link, .)
@@ -48,9 +48,9 @@ download_openair_data_rvest <- function(report_ids) {
   
   # Identify and download reports of choice ------------------------------------
   
-  report_links <- read_html(openair) %>%
-    html_nodes(xpath = '//a[@title="Download"]/@href') %>%
-    html_text
+  my_cookies <- cookies(openair) %>% unlist
+  report_links <- html(openair) %>%
+    xmlRoot %>% xpathSApply('//a[@title="Download"]/@href')
   report_list <- list()
   
   for (i in seq_along(report_ids)) {
@@ -58,18 +58,20 @@ download_openair_data_rvest <- function(report_ids) {
     index <- which(grepl(report_ids[i] , report_links))
     openair %<>% jump_to(paste0(base_url, report_links[index]))
     # Navigate to download section
-    download_url <- read_html(openair) %>%  
-      html_nodes(xpath = "//a[text()='Click here']/@href") %>%
-      html_text
+    download_url <- html(openair) %>% xmlRoot %>% 
+      xpathSApply("//a[text()='Click here']/@href")
     # Download and store csv data
-    parsed_csv <- openair %>% 
-      jump_to(paste0(base_url, download_url[[1]])) %$%
-      response %>% content("parsed")
-    
+    parsed_csv <- GET(paste0(base_url, download_url[[1]]), 
+                      set_cookies(.cookies = my_cookies)) %>% content('parsed')
     report_list[[i]] <- parsed_csv
+    
+    if (i < length(report_ids)) {
+      openair %<>% back
+    }
   }
   
   return(report_list)
+  
 }
 
 
@@ -167,7 +169,10 @@ download_openair_data_rselenium <- function(report_ids){
 download_openair_data_mix <- function(report_ids) {
   # Downloads report csv data from OpenAir using RSelenium and curl.
   # The login is performed using RSelenium. After that the cookies are extracted
-  # and passed on to a rvest ssession object
+  # and passed on to a rvest session object.
+  #
+  # This version of the function was necessary after switching to rvest 0.3.0
+  #
   #
   # Args:
   #   report_ids: Unique report IDs
@@ -261,34 +266,22 @@ download_openair_data_mix <- function(report_ids) {
 
 
 
-download_planio_report <- function() {
-  # Downloads task report Excel data from LabCase using curl
+download_planio_report <- function(report_id, project_name, api_key) {
+  # Downloads a task reportfrom LabCase using curl
   #
   # Returns:
-  #   Object containing raw xls data. The object's length will be 1 if the
-  #   login failed due to wrong credentials. In case of an empty report based
-  #   on a wrong report id (second url) the object's length will be 3072 which
-  #   corresponds to an empty report with general column names.
+  #   Character vector containing JSON data 
   
   base_url <- "https://labcase.softwareag.com"
   
-  planio <- html_session(base_url)
+  report_json <- GET(paste0(base_url, '/issues.json?query_id=',
+                            report_id, '&project_id=', project_name, '&limit=10000'),
+                add_headers(
+                  `X-Redmine-API-Key` = api_key
+                ),
+                content_type_json()
+  ) %>% content(as = "text") 
   
-  login <- html_form(planio) %>%
-    extract2(1) %>%
-    set_values(  
-      username = config$labcase$user,
-      password = config$labcase$password
-    )
   
-  login$url <- base_url
-  
-  planio %<>% submit_form(login) %>% jump_to("projects/prime/issues?query_id=482")
-  
-  my_cookies <- cookies(planio) %>% unlist
-  
-  raw_report <- GET(paste0(base_url, "/projects/prime/issues.xls"), 
-                    set_cookies(.cookies = my_cookies)) %>% content('raw')
-  
-  return(raw_report)
+  return(report_json)
 }
