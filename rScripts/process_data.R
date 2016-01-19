@@ -22,7 +22,7 @@ cutNamePrefix <- function(names) {
   # 
   # Returns:
   #   Vector with full methodology names
-  output <- gsub('^(Prime for |Prime |Prime - |Prime-|2014 Prime for )', "", names)
+  output <- gsub('^(Prime for |Prime |Prime - |Prime-)', "", names)
   return(output)
 }
 
@@ -81,12 +81,15 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   names(oa.tmp)[names(oa.tmp) == 'days.spent'] <- 'oa.days.spent'
   
   
-  lc.tmp <- filter(lc.prime.tasks, tracker == 'Todo') %>%
-    select(methodology, lc.issue.numb, subject, estimated.days, spent.days,
-           done)
-  names(lc.tmp)[names(lc.tmp) == 'estimated.days'] <- 'lc.days.planned'
-  names(lc.tmp)[names(lc.tmp) == 'spent.days'] <- 'lc.days.spent'
+#   lc.tmp <- filter(lc.prime.tasks, tracker == 'Todo') %>%
+#     select(methodology, lc.issue.numb, subject, estimated.days, spent.days,
+#            done)
+#   names(lc.tmp)[names(lc.tmp) == 'estimated.days'] <- 'lc.days.planned'
+#   names(lc.tmp)[names(lc.tmp) == 'spent.days'] <- 'lc.days.spent'
   
+  lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package',
+                   subject != '[Template - Copy me and enter service package name]') %>%
+    select(methodology, lc.issue.numb, subject, done)
   
   merged.df <- merge(lc.tmp, oa.tmp, by = 'lc.issue.numb', all = TRUE)
   # Add check column to highlight the source system in which a data problem exists
@@ -105,14 +108,18 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
                                    as.character(merged.df$subject))
   names(merged.df)[names(merged.df) == 'methodology.x'] <- 'methodology'
   
+#   merged.df <- select(merged.df, 
+#                       check, lc.issue.numb, methodology, subject, 
+#                       lc.days.planned, lc.days.spent, oa.days.planned, 
+#                       oa.days.spent, done)
+  
   merged.df <- select(merged.df, 
                       check, lc.issue.numb, methodology, subject, 
-                      lc.days.planned, lc.days.spent, oa.days.planned, 
-                      oa.days.spent, done)
+                      oa.days.planned, oa.days.spent, done)
   
   merged.df %<>% replace_na(list(
-    lc.days.planned = 0,
-    lc.days.spent = 0,
+    #lc.days.planned = 0,
+    #lc.days.spent = 0,
     oa.days.planned = 0,
     oa.days.spent = 0,
     done = 0
@@ -191,26 +198,28 @@ lc.prime.tasks <- jsonlite::fromJSON("./rawData/lc_tasks.json", flatten = TRUE) 
     methodology = project.name,
     tracker = tracker.name,
     subject = subject,
-    estimated.time = as.numeric(estimated_hours),
+    #estimated.time = as.numeric(estimated_hours),
     done = as.numeric(done_ratio),
-    spent.time = (estimated.time * done) / 100,
-    estimated.days = estimated.time / 8, 
-    spent.days = spent.time / 8,
+    #spent.time = (estimated.time * done) / 100,
+    #estimated.days = estimated.time / 8, 
+    #spent.days = spent.time / 8,
     lc.issue.numb = as.numeric(id)
   )
 
 
 # Start: Added for 2015 setup 
-index <- which(lc.prime.tasks$tracker == "Work package")
-
-lc.prime.tasks$methodology[index] <- lc.prime.tasks$subject[index]
-
-for (i in seq_along(1:nrow(lc.prime.tasks))) {
-  if (lc.prime.tasks$tracker[i] == "Todo") {
-    lc.prime.tasks$methodology[i] <- lc.prime.tasks$methodology[i - 1]
-  }
-}
+# index <- which(lc.prime.tasks$tracker == "Work package")
+# 
+# lc.prime.tasks$methodology[index] <- lc.prime.tasks$subject[index]
+# 
+# for (i in seq_along(1:nrow(lc.prime.tasks))) {
+#   if (lc.prime.tasks$tracker[i] == "Todo") {
+#     lc.prime.tasks$methodology[i] <- lc.prime.tasks$methodology[i - 1]
+#   }
+# }
 # End
+
+
 
 lc.prime.tasks %<>%
   mutate(
@@ -218,12 +227,12 @@ lc.prime.tasks %<>%
     methodology = map_name_to_acronym(methodology, config$mapping)
   )
 
-lc.prime.tasks %<>% replace_na(list(
-  estimated.time = 0,
-  spent.time = 0,
-  estimated.days = 0,
-  spent.days = 0
-))
+#lc.prime.tasks %<>% replace_na(list(
+#  estimated.time = 0,
+#  spent.time = 0,
+#  estimated.days = 0,
+#  spent.days = 0
+#))
 
                             
                                   
@@ -306,7 +315,8 @@ releaseProgressByMethodology <- lc.prime.tasks %>%
                                  filter(tracker == 'Work package') %>%
                                  group_by(methodology) %>%
                                  summarize(
-                                   achievementInPercent = (sum(spent.time) / sum(estimated.time))*100
+                                   #achievementInPercent = (sum(spent.time) / sum(estimated.time))*100
+                                   achievementInPercent = sum(done) / n()
                                  )
 
 write.csv(releaseProgressByMethodology, 

@@ -25,14 +25,12 @@ download_openair_data_rvest <- function(report_ids) {
       password = config$openair$password
     )
   
-  login$url <- 'https://www.openair.com/index.pl'
-  
   openair %<>% submit_form(login) %>%
     follow_link('Dashboard')
   
-  proxy_section_link <- html(openair) %>% 
+  proxy_section_link <- read_html(openair) %>% 
     html_node(xpath = "//script[contains(text(),'OA3.ui.transform.nav.header.init')]") %>%
-    xmlValue
+    html_text
   proxy_section_link <- regexpr("Support(.*)dashboard.pl(.*?)proxy_as", 
                                 proxy_section_link) %>% 
     regmatches(proxy_section_link, .)
@@ -49,19 +47,21 @@ download_openair_data_rvest <- function(report_ids) {
   # Identify and download reports of choice ------------------------------------
   
   my_cookies <- cookies(openair) %>% unlist
-  report_links <- html(openair) %>%
-    xmlRoot %>% xpathSApply('//a[@title="Download"]/@href')
+  report_links <- read_html(openair) %>%
+    html_nodes(xpath = '//a[@title="Download"]/@href') %>% html_text
   report_list <- list()
+  
   
   for (i in seq_along(report_ids)) {
     
     index <- which(grepl(report_ids[i] , report_links))
     openair %<>% jump_to(paste0(base_url, report_links[index]))
     # Navigate to download section
-    download_url <- html(openair) %>% xmlRoot %>% 
-      xpathSApply("//a[text()='Click here']/@href")
+    download_url <- read_html(openair) %>% 
+      html_nodes(xpath = "//a[text()='Click here']/@href") %>%
+      html_text %>% extract2(1)
     # Download and store csv data
-    parsed_csv <- GET(paste0(base_url, download_url[[1]]), 
+    parsed_csv <- GET(paste0(base_url, download_url), 
                       set_cookies(.cookies = my_cookies)) %>% content('parsed')
     report_list[[i]] <- parsed_csv
     
@@ -170,8 +170,6 @@ download_openair_data_mix <- function(report_ids) {
   # Downloads report csv data from OpenAir using RSelenium and curl.
   # The login is performed using RSelenium. After that the cookies are extracted
   # and passed on to a rvest session object.
-  #
-  # This version of the function was necessary after switching to rvest 0.3.0
   #
   #
   # Args:
