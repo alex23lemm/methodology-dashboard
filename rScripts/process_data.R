@@ -69,26 +69,13 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   
   oa.tmp <- group_by(oa.data.df, methodology, task, lc.issue.numb) %>%
     summarize(
-      # Divide by n() (nummber of resources assigend to this task) because the 
-      # total sum of days.planned for a specific task is shown for each assigend
-      # resource
-      days.planned = sum(days.planned)/n(),
-      # Unlike for days.planned, the days.spent column shows the days spent for 
-      # each individual resource
+      days.planned = sum(days.planned),
       days.spent = sum(days.spent)
     )
   names(oa.tmp)[names(oa.tmp) == 'days.planned'] <- 'oa.days.planned'
   names(oa.tmp)[names(oa.tmp) == 'days.spent'] <- 'oa.days.spent'
   
-  
-#   lc.tmp <- filter(lc.prime.tasks, tracker == 'Todo') %>%
-#     select(methodology, lc.issue.numb, subject, estimated.days, spent.days,
-#            done)
-#   names(lc.tmp)[names(lc.tmp) == 'estimated.days'] <- 'lc.days.planned'
-#   names(lc.tmp)[names(lc.tmp) == 'spent.days'] <- 'lc.days.spent'
-  
-  lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package',
-                   subject != '[Template - Copy me and enter service package name]') %>%
+  lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package') %>%
     select(methodology, lc.issue.numb, subject, done)
   
   merged.df <- merge(lc.tmp, oa.tmp, by = 'lc.issue.numb', all = TRUE)
@@ -108,18 +95,11 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
                                    as.character(merged.df$subject))
   names(merged.df)[names(merged.df) == 'methodology.x'] <- 'methodology'
   
-#   merged.df <- select(merged.df, 
-#                       check, lc.issue.numb, methodology, subject, 
-#                       lc.days.planned, lc.days.spent, oa.days.planned, 
-#                       oa.days.spent, done)
-  
   merged.df <- select(merged.df, 
                       check, lc.issue.numb, methodology, subject, 
                       oa.days.planned, oa.days.spent, done)
   
   merged.df %<>% replace_na(list(
-    #lc.days.planned = 0,
-    #lc.days.spent = 0,
     oa.days.planned = 0,
     oa.days.spent = 0,
     done = 0
@@ -139,29 +119,39 @@ oa.voluntary.raw <- read.csv('./rawData/prime_voluntary.csv',
 oa.billable.raw <- read.csv('./rawData/prime_bookable.csv',
                             header = TRUE, encoding = 'UTF-8')
 
-# Extract total billable and total voluntary hours spent
-total.vol.hours <- sum(oa.voluntary.raw$Approved.hours)
-total.bill.hours <- sum(oa.billable.raw$Approved.hours)
-
 # Add cost_type column to data frames to separate billable from voluntary 
 # work later (V: Voluntary, B: Billable)
 oa.voluntary.raw$cost_type <- rep('V', dim(oa.voluntary.raw)[1])
 oa.billable.raw$cost_type <- rep('B', dim(oa.billable.raw)[1])
 
-# Correct possible false setup in source system
-oa.voluntary.raw$Approved.actual.cost..EUR. <- 0
+# Process merged OpenAir raw data
+names(oa.voluntary.raw) <- tolower(names(oa.voluntary.raw))
+names(oa.billable.raw) <- tolower(names(oa.billable.raw))
+
+
+# Section added to differ between timesheet- and project-based report. 
+# Ensures that we won't break the subsequent code below because of column
+# name differences between the two report types.
+oa.billable.raw$task.planned.hours <- NULL
+oa.billable.raw %<>%
+  rename(
+    approved.actual.cost..eur. = task.project...actual.cost...eur.,
+    approved.hours = task.project...approved.hours,
+    task.planned.hours = all.assigned.hours
+  )
+
 
 
 # Merge billable and voluntary project
 oa.processed <- rbind(oa.voluntary.raw, oa.billable.raw)
 
-# Process merged OpenAir raw data
-names(oa.processed) <- tolower(names(oa.processed))
-
 oa.processed %<>% 
+  replace_na(list(
+    approved.hours = 0
+  )) %>%
   rename(
     methodology = phase
-  ) %>% 
+  ) %>%
   mutate(
     methodology = cutNamePrefix(methodology),
     methodology = map_name_to_acronym(methodology, config$mapping),
@@ -170,6 +160,14 @@ oa.processed %<>%
     days.planned = task.planned.hours / 8,
     days.spent = approved.hours / 8
   )
+
+
+# Extract total billable and total voluntary hours spent
+total.vol.hours <- sum(oa.processed$approved.hours[oa.processed$cost_type == "V"])
+total.bill.hours <- sum(oa.processed$approved.hours[oa.processed$costtype == "B"])
+
+# Correct possible false setup in source system
+oa.processed$approved.actual.cost..eur.[oa.processed$cost_type == "V"] <- 0
 
 # Extract LC issue number and store result in separate column
 oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task, 
@@ -197,44 +195,17 @@ lc.prime.tasks <- jsonlite::fromJSON("./rawData/lc_tasks.json", flatten = TRUE) 
   transmute(
     methodology = project.name,
     tracker = tracker.name,
-    subject = subject,
-    #estimated.time = as.numeric(estimated_hours),
+    subject = str_trim(subject),
     done = as.numeric(done_ratio),
-    #spent.time = (estimated.time * done) / 100,
-    #estimated.days = estimated.time / 8, 
-    #spent.days = spent.time / 8,
     lc.issue.numb = as.numeric(id)
-  )
-
-
-# Start: Added for 2015 setup 
-# index <- which(lc.prime.tasks$tracker == "Work package")
-# 
-# lc.prime.tasks$methodology[index] <- lc.prime.tasks$subject[index]
-# 
-# for (i in seq_along(1:nrow(lc.prime.tasks))) {
-#   if (lc.prime.tasks$tracker[i] == "Todo") {
-#     lc.prime.tasks$methodology[i] <- lc.prime.tasks$methodology[i - 1]
-#   }
-# }
-# End
-
-
-
-lc.prime.tasks %<>%
+  ) %>%
+  filter(subject != '[Template - Copy me and enter service package name]') %>%
   mutate(
     methodology = cutNamePrefix(methodology),
     methodology = map_name_to_acronym(methodology, config$mapping)
   )
 
-#lc.prime.tasks %<>% replace_na(list(
-#  estimated.time = 0,
-#  spent.time = 0,
-#  estimated.days = 0,
-#  spent.days = 0
-#))
 
-                            
                                   
 # 3.1 Create and save .csv files (Overview page) -------------------------------
 
@@ -287,9 +258,10 @@ daysSpentByContributor <- dcast(daysSpentByContributor,
 # Add total.days.spent column to data frame
 # Check if volunatary work exists
 if ("V" %in% names(daysSpentByContributor)) {
-  daysSpentByContributor <- transform(daysSpentByContributor, total.days = B + V)
+  daysSpentByContributor <- mutate(daysSpentByContributor, total.days = B + V)
 } else {
-  daysSpentByContributor <- transform(daysSpentByContributor, total.days = B)
+  daysSpentByContributor$V <- rep(0, nrow(daysSpentByContributor))
+  daysSpentByContributor <- mutate(daysSpentByContributor, total.days = B)
 }
 # Duplicate methodolgy column in order to have another filter option available 
 # on the UI layer
@@ -332,10 +304,13 @@ mergedOaLcWorkPackageStatus <- mergeLcOaWorkPackageData(oa.pro.mer, lc.prime.tas
 write.csv(mergedOaLcWorkPackageStatus,
           file = './rOutput/megedOaLCWorkPackageStatus.csv', row.names = FALSE)
 
+
+
 # Create spent days by contributor table 
 oaDaysSpentByContributor <- group_by(oa.pro.mer, methodology, lc.issue.numb, 
                                      user) %>%
   summarize(
+    days.planned = sum(days.planned),
     days.spent = sum(days.spent) 
   )
 

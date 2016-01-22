@@ -280,6 +280,5 @@ download_planio_report <- function(report_id, project_name, api_key) {
                 content_type_json()
   ) %>% content(as = "text") 
   
-  
   return(report_json)
 }

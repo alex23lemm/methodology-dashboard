@@ -31,6 +31,8 @@ The relevant ARIS BS data is provided by the server via a JavaScript report whic
   * dplyr
   * magrittr
   * stringr
+  * jsonlite
+  * tidyr
 
 The following are installation instructions for Windows:
 

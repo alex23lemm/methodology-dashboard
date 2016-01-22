@@ -21,11 +21,11 @@
 error <- FALSE
 
 report_list <- try(download_openair_data_rvest(c(config$openair$billable_report_id,
-                                           config$openair$voluntary_report_id)),
+                                                 config$openair$voluntary_report_id)),
                    silent = TRUE)
 
-if (class(report_list) == 'try-error' | class(report_list) != 'list' |
-      sum(sapply(report_list, function(x) nrow(x) > 0)) != length(report_list)) {
+if (class(report_list) == 'try-error' | class(report_list) != 'list' ) {
+      # | sum(sapply(report_list, function(x) nrow(x) > 0)) != length(report_list)) {
   error <- TRUE
 } else {
   tmp.billable.df <- report_list[[1]]
@@ -67,8 +67,8 @@ if (!error) {
 
 # 3. Save the dowonloaded raw data ---------------------------------------------
 
-# Only save data and make it available for processing when every download 
-# before was successfull
+# Only save and make data available for processing when every download 
+# was successfull
 
 if (!error) {
   #Date of downloading and processing
