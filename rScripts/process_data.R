@@ -140,8 +140,6 @@ oa.billable.raw %<>%
     task.planned.hours = all.assigned.hours
   )
 
-
-
 # Merge billable and voluntary project
 oa.processed <- rbind(oa.voluntary.raw, oa.billable.raw)
 
@@ -174,6 +172,10 @@ oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task,
                                                 regexec('^([0-9]+)', 
                                                         oa.processed$task)),
                                      function(x)x[2]))
+# Add dummy issue number to OA tasks without LC representation
+group_index <- group_indices(oa.processed, methodology, task)
+oa.processed$lc.issue.numb[is.na(oa.processed$lc.issue.numb)] <- group_index[is.na(oa.processed$lc.issue.numb)]
+
 
 
 # Process LabCase data (employee list)
