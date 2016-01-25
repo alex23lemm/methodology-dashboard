@@ -264,21 +264,66 @@ download_openair_data_mix <- function(report_ids) {
 
 
 
-download_planio_report <- function(report_id, project_name, api_key) {
+download_planio_report_api <- function(report_id, project_name, api_key) {
   # Downloads a task reportfrom LabCase using curl
   #
   # Returns:
-  #   Character vector containing JSON data 
+  #   data frame containing parsed CSV report data
   
   base_url <- "https://labcase.softwareag.com"
   
-  report_json <- GET(paste0(base_url, '/issues.json?query_id=',
-                            report_id, '&project_id=', project_name, '&limit=10000'),
+  report <- GET(paste0(base_url, '/issues.json?query_id=',
+                            report_id, '&project_id=', project_name, '&limit=100'),
                 add_headers(
                   `X-Redmine-API-Key` = api_key
                 ),
                 content_type_json()
-  ) %>% content(as = "text") 
+  ) %>% content(as = "text") %>%
+    jsonlite::fromJSON(., flatten = TRUE) %>%
+    extract2(1) %>%
+    transmute(
+      methodology = project.name,
+      tracker = tracker.name,
+      subject = str_trim(subject),
+      done = as.numeric(done_ratio),
+      lc.issue.numb = as.numeric(id)
+    ) 
   
-  return(report_json)
+  return(report)
+}
+
+download_planio_report_ws <- function(report_id, project_name, user_name, 
+                                      password) {
+  # Downloads task report Excel data from LabCase using web scraping
+  #
+  # Returns:
+  #   data frame containing parsed CSV report data
+  
+  base_url <- "https://labcase.softwareag.com"
+  
+  planio <- html_session(base_url)
+  
+  login <- html_form(planio) %>%
+    extract2(1) %>%
+    set_values(  
+      username = user_name,
+      password = password
+    )
+  
+  planio %<>% submit_form(login) %>% jump_to(paste0("projects/", project_name, 
+                                                    "/issues?query_id=", report_id))
+  
+  report <- planio %>% 
+    jump_to(paste0(base_url, "/projects/prime/issues.csv")) %$%
+    response %>% content("parsed") %>% 
+    transmute(
+      lc.issue.numb = as.numeric(X.),
+      methodology = Project,
+      tracker = Tracker,
+      subject = str_trim(Subject),
+      done = as.numeric(X..Done)
+    )
+    
+  return(report)
+  
 }

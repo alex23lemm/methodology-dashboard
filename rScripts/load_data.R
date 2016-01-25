@@ -55,9 +55,11 @@ if (lc.empl.exists && !error) {
 
 if (!error) {
   # Download task list
-  lc_tasks <- try(download_planio_report(config$labcase$report_id,
-                                         config$labcase$project_name,
-                                         config$labcase$api_key), silent = TRUE)
+  lc_tasks <- try(download_planio_report_ws(config$labcase$report_id,
+                                            config$labcase$project_name,
+                                            config$labcase$user,
+                                            config$labcase$password),
+                  silent = TRUE)
   
   if (class(lc_tasks) == 'try-error') {
     error <- TRUE
@@ -84,7 +86,6 @@ if (!error) {
   writeBin(employee.binary, con)
   close(con)
   
-  con <- file('./rawData/lc_tasks.json', open ='wt')
-  write(lc_tasks, con)
-  close(con)
+  write.csv(lc_tasks, file = './rawData/lc_tasks.csv', row.names = FALSE)
+
 }

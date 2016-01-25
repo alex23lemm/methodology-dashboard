@@ -190,15 +190,8 @@ oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'),
 
 # Process LabCase data (task list)
 
-lc.prime.tasks <- jsonlite::fromJSON("./rawData/lc_tasks.json", flatten = TRUE) %>%
-  extract2(1) %>%
-  transmute(
-    methodology = project.name,
-    tracker = tracker.name,
-    subject = str_trim(subject),
-    done = as.numeric(done_ratio),
-    lc.issue.numb = as.numeric(id)
-  ) %>%
+lc.prime.tasks <- read.csv('./rawData/lc_tasks.csv', 
+                           header = TRUE, encoding = 'UTF-8') %>%
   filter(subject != '[Template - Copy me and enter service package name]') %>%
   mutate(
     methodology = cutNamePrefix(methodology),
