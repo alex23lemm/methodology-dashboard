@@ -108,6 +108,26 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   return(merged.df)
 }
 
+get_issue_numbers <- function(lc_data_df, issue_numbers) {
+  # Identifies LC report records by issue number and returns the respective number
+  # including the numbers from the entire subissue structure.
+  #
+  # Args:
+  #   lc.data.df: LC issue list
+  #   issue_number: issue numbers from the desisred parent level the search 
+  #                 starts at
+  #         
+  # Returns:
+  #   Vector containing issue numbers from the entire issue hierachy
+  
+  child_issues <- lc_data_df$lc.issue.numb[lc_data_df$parent.task %in% issue_numbers]
+  
+  if (length(child_issues) > 0) {
+    tmp <- get_issue_numbers(lc_data_df, child_issues)
+    issue_numbers <- c(issue_numbers, tmp)
+  }
+  return(issue_numbers)
+}
 
 
 # 2. Process OpenAir and LabCase raw data --------------------------------------
@@ -194,11 +214,18 @@ oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'),
 
 lc.prime.tasks <- read.csv('./rawData/lc_tasks.csv', 
                            header = TRUE, encoding = 'UTF-8') %>%
-  filter(subject != '[Template - Copy me and enter service package name]') %>%
   mutate(
     methodology = cutNamePrefix(methodology),
     methodology = map_name_to_acronym(methodology, config$mapping)
   )
+
+
+template_issues <- lc.prime.tasks %>%
+  filter(subject == "[Template - Copy me and enter service package name]") %$%
+  lc.issue.numb %>%
+  get_issue_numbers(lc.prime.tasks, .)
+
+lc.prime.tasks %<>% filter(!lc.issue.numb %in% template_issues)
 
 
                                   
@@ -312,6 +339,18 @@ oaDaysSpentByContributor <- group_by(oa.pro.mer, methodology, lc.issue.numb,
 write.csv(oaDaysSpentByContributor, 
           file = './rOutput/oaDaysSpentByContributor.csv', row.names = FALSE)
 
+readinessByPlatform <- lc.prime.tasks %>% 
+  filter(subject %in% c("General readiness", "Sales Readiness",
+                        "Consulting Readiness")) %>%
+  group_by(methodology, subject) %>%
+  summarize(
+    done = sum(done)/n()
+  ) %>%
+  spread(subject, done)
 
+write.csv(readiness_by_platform,
+          file = "./rOutput/readinessByPlatform.csv", row.names = FALSE)
+  
+  
 
 

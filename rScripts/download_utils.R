@@ -286,7 +286,8 @@ download_planio_report_api <- function(report_id, project_name, api_key) {
       tracker = tracker.name,
       subject = str_trim(subject),
       done = as.numeric(done_ratio),
-      lc.issue.numb = as.numeric(id)
+      lc.issue.numb = as.numeric(id),
+      parent.task = parent.id
     ) 
   
   return(report)
@@ -321,9 +322,14 @@ download_planio_report_ws <- function(report_id, project_name, user_name,
       methodology = Project,
       tracker = Tracker,
       subject = str_trim(Subject),
-      done = as.numeric(X..Done)
+      done = as.numeric(X..Done),
+      parent.task = Parent.task
     )
-    
+  
+  report$parent.task <- as.numeric(sapply(regmatches(report$parent.task, 
+                                                     regexec('.*#([0-9]+).*', 
+                                                             report$parent.task)),
+                                          function(x)x[2]))
   return(report)
   
 }
