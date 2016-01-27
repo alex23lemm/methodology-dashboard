@@ -273,7 +273,7 @@ download_planio_report_api <- function(report_id, project_name, api_key) {
   base_url <- "https://labcase.softwareag.com"
   
   report <- GET(paste0(base_url, '/issues.json?query_id=',
-                            report_id, '&project_id=', project_name, '&limit=100'),
+                            report_id, '&project_id=', project_name, '&limit=1000'),
                 add_headers(
                   `X-Redmine-API-Key` = api_key
                 ),

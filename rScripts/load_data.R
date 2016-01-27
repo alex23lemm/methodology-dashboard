@@ -55,10 +55,9 @@ if (lc.empl.exists && !error) {
 
 if (!error) {
   # Download task list
-  lc_tasks <- try(download_planio_report_ws(config$labcase$report_id,
+  lc_tasks <- try(download_planio_report_api(config$labcase$report_id,
                                             config$labcase$project_name,
-                                            config$labcase$user,
-                                            config$labcase$password),
+                                            config$labcase$api_key),
                   silent = TRUE)
   
   if (class(lc_tasks) == 'try-error') {
