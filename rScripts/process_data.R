@@ -108,9 +108,10 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   return(merged.df)
 }
 
-get_issue_numbers <- function(lc_data_df, issue_numbers) {
-  # Identifies LC report records by issue number and returns the respective number
-  # including the numbers from the entire subissue structure.
+get_issue_hierarchy  <- function(lc_data_df, issue_numbers) {
+  # Identifies all LC report records belonging to a certain issue hierarchy 
+  # giventhe issue numbers from the parent level.
+  #
   #
   # Args:
   #   lc.data.df: LC issue list
@@ -123,7 +124,7 @@ get_issue_numbers <- function(lc_data_df, issue_numbers) {
   child_issues <- lc_data_df$lc.issue.numb[lc_data_df$parent.task %in% issue_numbers]
   
   if (length(child_issues) > 0) {
-    tmp <- get_issue_numbers(lc_data_df, child_issues)
+    tmp <- get_issue_hierarchy(lc_data_df, child_issues)
     issue_numbers <- c(issue_numbers, tmp)
   }
   return(issue_numbers)
@@ -348,7 +349,7 @@ readinessByPlatform <- lc.prime.tasks %>%
   ) %>%
   spread(subject, done)
 
-write.csv(readiness_by_platform,
+write.csv(readinessByPlatform,
           file = "./rOutput/readinessByPlatform.csv", row.names = FALSE)
   
   
