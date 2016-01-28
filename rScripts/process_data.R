@@ -224,7 +224,7 @@ lc.prime.tasks <- read.csv('./rawData/lc_tasks.csv',
 template_issues <- lc.prime.tasks %>%
   filter(subject == "[Template - Copy me and enter service package name]") %$%
   lc.issue.numb %>%
-  get_issue_numbers(lc.prime.tasks, .)
+  get_issue_hierarchy(lc.prime.tasks, .)
 
 lc.prime.tasks %<>% filter(!lc.issue.numb %in% template_issues)
 

@@ -272,8 +272,39 @@ download_planio_report_api <- function(report_id, project_name, api_key) {
   
   base_url <- "https://labcase.softwareag.com"
   
+  response <- GET(paste0(base_url, '/issues.json?query_id=',
+                         report_id, '&project_id=', project_name),
+                add_headers(
+                  `X-Redmine-API-Key` = api_key
+                ),
+                content_type_json()
+  ) %>% content(as = "text") %>%
+    jsonlite::fromJSON(., flatten = TRUE) 
+  
+  total_count <- response$total_count
+  offset <- 0
+  limit <- 100
+  report <- data_frame()
+  
+  while (total_count - offset > limit) {
+    report <- GET(paste0(base_url, '/issues.json?query_id=',
+                           report_id, '&project_id=', project_name,
+                           '&offset=', offset, '&limit=', limit),
+                    add_headers(
+                      `X-Redmine-API-Key` = api_key
+                    ),
+                    content_type_json()
+    ) %>% content(as = "text") %>%
+      jsonlite::fromJSON(., flatten = TRUE) %>%
+      extract2(1) %>%
+      bind_rows(report, .)
+    
+    offset <- offset + 100
+  }
+  
   report <- GET(paste0(base_url, '/issues.json?query_id=',
-                            report_id, '&project_id=', project_name, '&limit=1000'),
+                       report_id, '&project_id=', project_name,
+                       '&offset=', offset, '&limit=', limit),
                 add_headers(
                   `X-Redmine-API-Key` = api_key
                 ),
@@ -281,6 +312,7 @@ download_planio_report_api <- function(report_id, project_name, api_key) {
   ) %>% content(as = "text") %>%
     jsonlite::fromJSON(., flatten = TRUE) %>%
     extract2(1) %>%
+    bind_rows(report, .) %>%
     transmute(
       methodology = project.name,
       tracker = tracker.name,
