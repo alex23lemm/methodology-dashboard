@@ -20,7 +20,8 @@
 
 error <- FALSE
 
-report_list <- try(download_openair_data_rvest(c(config$openair$billable_report_id,
+report_list <- try(download_openair_data_rvest(c(config$openair$project_billable_report_id,
+                                                 config$openair$timesheet_billable_report_id,
                                                  config$openair$voluntary_report_id)),
                    silent = TRUE)
 
@@ -28,8 +29,9 @@ if (class(report_list) == 'try-error' | class(report_list) != 'list' ) {
       # | sum(sapply(report_list, function(x) nrow(x) > 0)) != length(report_list)) {
   error <- TRUE
 } else {
-  tmp.billable.df <- report_list[[1]]
-  tmp.voluntary.df <- report_list[[2]]
+  tmp.proj.billable.df <- report_list[[1]]
+  tmp.timesheet.billable.df <- report_list[[2]]
+  tmp.voluntary.df <- report_list[[3]]
 }
 
 
@@ -76,7 +78,9 @@ if (!error) {
   date <- format(now(), '%b %d, %Y %X') 
   write.csv(as.data.frame(date), file = './rOutput/dateOfRetrieval.csv', 
             row.names = FALSE)
-  write.csv(tmp.billable.df, file = './rawData/prime_bookable.csv', 
+  write.csv(tmp.proj.billable.df, file = './rawData/oa_proj_billable.csv',
+            row.names = FALSE)
+  write.csv(tmp.timesheet.billable.df, file = './rawData/oa_timesheet_billable.csv', 
             row.names = FALSE)
   write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary.csv',
             row.names = FALSE)

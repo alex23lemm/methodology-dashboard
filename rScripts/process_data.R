@@ -69,11 +69,13 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   
   oa.tmp <- group_by(oa.data.df, methodology, task, lc.issue.numb) %>%
     summarize(
-      days.planned = sum(days.planned),
-      days.spent = sum(days.spent)
+      days.planned = round(sum(days.planned), digits = 2),
+      days.spent = round(sum(days.spent), digits = 2)
+    ) %>%
+    rename(
+      oa.days.planned = days.planned,
+      oa.days.spent = days.spent
     )
-  names(oa.tmp)[names(oa.tmp) == 'days.planned'] <- 'oa.days.planned'
-  names(oa.tmp)[names(oa.tmp) == 'days.spent'] <- 'oa.days.spent'
   
   lc.tmp <- filter(lc.prime.tasks, tracker == 'Work package') %>%
     select(methodology, lc.issue.numb, subject, done)
@@ -137,36 +139,40 @@ get_issue_hierarchy  <- function(lc_data_df, issue_numbers) {
 
 oa.voluntary.raw <- read.csv('./rawData/prime_voluntary.csv', 
                              header = TRUE, encoding = 'UTF-8')
-oa.billable.raw <- read.csv('./rawData/prime_bookable.csv',
+oa.proj.billable.df <- read.csv('./rawData/oa_proj_billable.csv',
+                                 header = TRUE, encoding = 'UTF-8')
+oa.timesheet.billable.df <- read.csv('./rawData/oa_timesheet_billable.csv',
                             header = TRUE, encoding = 'UTF-8')
+
+oa.voluntary.raw %<>%
+  setNames(tolower(names(.)))
+
+oa.timesheet.billable.df %<>% 
+  select(Task, User, Approved.hours, Approved.actual.cost..EUR.) %>%
+  unite(task_user, Task, User) 
+
+oa.proj.billable.df %<>%
+  unite(task_user, Task, User, remove = FALSE) %>%
+  left_join(oa.timesheet.billable.df, by = "task_user") %>%
+  setNames(tolower(names(.))) %>%
+  select(-task_user, -task.planned.hours) %>%
+  rename(
+    task.planned.hours = all.assigned.hours
+  )
+
 
 # Add cost_type column to data frames to separate billable from voluntary 
 # work later (V: Voluntary, B: Billable)
 oa.voluntary.raw$cost_type <- rep('V', dim(oa.voluntary.raw)[1])
-oa.billable.raw$cost_type <- rep('B', dim(oa.billable.raw)[1])
+oa.proj.billable.df$cost_type <- rep('B', dim(oa.proj.billable.df)[1])
 
-# Process merged OpenAir raw data
-names(oa.voluntary.raw) <- tolower(names(oa.voluntary.raw))
-names(oa.billable.raw) <- tolower(names(oa.billable.raw))
-
-
-# Section added to differ between timesheet- and project-based report. 
-# Ensures that we won't break the subsequent code below because of column
-# name differences between the two report types.
-oa.billable.raw$task.planned.hours <- NULL
-oa.billable.raw %<>%
-  rename(
-    approved.actual.cost..eur. = task.project...actual.cost...eur.,
-    approved.hours = task.project...approved.hours,
-    task.planned.hours = all.assigned.hours
-  )
 
 # Merge billable and voluntary project
-oa.processed <- rbind(oa.voluntary.raw, oa.billable.raw)
-
-oa.processed %<>% 
+oa.processed.df <- bind_rows(oa.voluntary.raw, oa.proj.billable.df) %>%
+  select(-date, -project) %>%
   replace_na(list(
-    approved.hours = 0
+    approved.hours = 0, 
+    approved.actual.cost..eur. = 0
   )) %>%
   rename(
     methodology = phase
@@ -182,20 +188,20 @@ oa.processed %<>%
 
 
 # Extract total billable and total voluntary hours spent
-total.vol.hours <- sum(oa.processed$approved.hours[oa.processed$cost_type == "V"])
-total.bill.hours <- sum(oa.processed$approved.hours[oa.processed$costtype == "B"])
+total.vol.hours <- sum(oa.processed.df$approved.hours[oa.processed.df$cost_type == "V"])
+total.bill.hours <- sum(oa.processed.df$approved.hours[oa.processed.df$cost_type == "B"])
 
 # Correct possible false setup in source system
-oa.processed$approved.actual.cost..eur.[oa.processed$cost_type == "V"] <- 0
+oa.processed.df$approved.actual.cost..eur.[oa.processed.df$cost_type == "V"] <- 0
 
 # Extract LC issue number and store result in separate column
-oa.processed$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed$task, 
+oa.processed.df$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed.df$task, 
                                                 regexec('^([0-9]+)', 
-                                                        oa.processed$task)),
+                                                        oa.processed.df$task)),
                                      function(x)x[2]))
 # Add dummy issue number to OA tasks without LC representation
-group_index <- group_indices(oa.processed, methodology, task)
-oa.processed$lc.issue.numb[is.na(oa.processed$lc.issue.numb)] <- group_index[is.na(oa.processed$lc.issue.numb)]
+group_index <- group_indices(oa.processed.df, methodology, task)
+oa.processed.df$lc.issue.numb[is.na(oa.processed.df$lc.issue.numb)] <- group_index[is.na(oa.processed.df$lc.issue.numb)]
 
 
 
@@ -206,7 +212,7 @@ empl.country.map <- read_excel('./rawData/employeeCountryMapping.xlsx')
 names(empl.country.map)[1] <- 'user'
 
 # Merge OpenAir report with employee/country excel file
-oa.pro.mer <- merge(oa.processed, empl.country.map, by = c('user'), 
+oa.pro.mer <- merge(oa.processed.df, empl.country.map, by = c('user'), 
                     all.x = TRUE)
 
 
@@ -250,7 +256,7 @@ totalInvestByMethInEuros <- oa.pro.mer %>%
                               group_by(methodology) %>%
                               summarize(
                                 eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
-                                                   digits = 1)
+                                                   digits = 2)
                                 )
 write.csv(totalInvestByMethInEuros, 
           file = './rOutput/totalInvestByMethInEuros.csv', row.names = FALSE)
@@ -333,8 +339,8 @@ write.csv(mergedOaLcWorkPackageStatus,
 oaDaysSpentByContributor <- group_by(oa.pro.mer, methodology, lc.issue.numb, 
                                      user) %>%
   summarize(
-    days.planned = sum(days.planned),
-    days.spent = sum(days.spent) 
+    days.planned = round(sum(days.planned), digits = 2),
+    days.spent = round(sum(days.spent), digits = 2) 
   )
 
 write.csv(oaDaysSpentByContributor, 
