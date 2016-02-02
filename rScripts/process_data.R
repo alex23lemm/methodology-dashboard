@@ -51,7 +51,6 @@ map_name_to_acronym <- function(names, mapping) {
 }
 
 
-
 mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   # Merges the LC and OA data on the work package level 
   #
@@ -110,9 +109,10 @@ mergeLcOaWorkPackageData <- function(oa.data.df, lc.data.df) {
   return(merged.df)
 }
 
+
 get_issue_hierarchy  <- function(lc_data_df, issue_numbers) {
   # Identifies all LC report records belonging to a certain issue hierarchy 
-  # giventhe issue numbers from the parent level.
+  # given the issue numbers from the parent level.
   #
   #
   # Args:
@@ -133,66 +133,85 @@ get_issue_hierarchy  <- function(lc_data_df, issue_numbers) {
 }
 
 
+preprocess_oa_project_timesheet_data <- function(project_df, timesheet_df) {
+  #  Preprocesses and merges project-based and timesheet-based report data
+  #  extracted from the same OA project. 
+  #
+  #  OA project-based reports return the correct number of planned hours per 
+  #  Phase/Task/User drill-down which is stored in the 'All.assigned.hours' 
+  #  column.
+  #  Instead, the accurate information about time and Euros spent per 
+  #  Phase/Task/User drill-down can only be captured by a timesheet-based 
+  #  report which stores the information in the 'Approved.hours' and the 
+  #  'Approved.actual.cost..EUR.' column.
+  #
+  # Args:
+  #   project_df: OA project-based report
+  #   timesheet_df: OA timesheet-based report
+  #         
+  # Returns:
+  #   Dataframe containing merged report data
+  
+  timesheet_df %<>%
+    setNames(tolower(names(.))) %>%
+    select(task, user, 
+           approved_hours = approved.hours, 
+           approved_costs_EUR = approved.actual.cost..eur.) %>%
+    unite(task_user, task, user) 
+  
+  project_df %<>%
+    setNames(tolower(names(.))) %>%
+    unite(task_user, task, user, remove = FALSE) %>%
+    left_join(timesheet_df, by = "task_user") %>%
+    rename(
+      planned_hours = all.assigned.hours,
+      methodology = phase
+    ) %>%
+    select(-date, -project, -task_user, -task.planned.hours) %>%
+    replace_na(list(
+      approved_hours = 0,
+      approved_costs_EUR = 0
+    )) %>%
+    mutate(
+      methodology = cutNamePrefix(methodology),
+      methodology = map_name_to_acronym(methodology, config$mapping),
+      task = as.character(task),
+      user = gsub(" ", "", user),
+      days.planned = planned_hours / 8,
+      days.spent = approved_hours / 8
+    )
+  
+  return(project_df)
+}
+
+
 # 2. Process OpenAir and LabCase raw data --------------------------------------
 
 # Process Open Air data
 
-oa.voluntary.raw <- read.csv('./rawData/prime_voluntary.csv', 
-                             header = TRUE, encoding = 'UTF-8')
 oa.proj.billable.df <- read.csv('./rawData/oa_proj_billable.csv',
                                  header = TRUE, encoding = 'UTF-8')
 oa.timesheet.billable.df <- read.csv('./rawData/oa_timesheet_billable.csv',
                             header = TRUE, encoding = 'UTF-8')
 
-oa.voluntary.raw %<>%
-  setNames(tolower(names(.)))
-
-oa.timesheet.billable.df %<>% 
-  select(Task, User, Approved.hours, Approved.actual.cost..EUR.) %>%
-  unite(task_user, Task, User) 
-
-oa.proj.billable.df %<>%
-  unite(task_user, Task, User, remove = FALSE) %>%
-  left_join(oa.timesheet.billable.df, by = "task_user") %>%
-  setNames(tolower(names(.))) %>%
-  select(-task_user, -task.planned.hours) %>%
-  rename(
-    task.planned.hours = all.assigned.hours
-  )
+oa.processed.df <- preprocess_oa_project_timesheet_data(oa.proj.billable.df,
+                                                oa.timesheet.billable.df)
 
 
-# Add cost_type column to data frames to separate billable from voluntary 
-# work later (V: Voluntary, B: Billable)
-oa.voluntary.raw$cost_type <- rep('V', dim(oa.voluntary.raw)[1])
-oa.proj.billable.df$cost_type <- rep('B', dim(oa.proj.billable.df)[1])
-
-
-# Merge billable and voluntary project
-oa.processed.df <- bind_rows(oa.voluntary.raw, oa.proj.billable.df) %>%
-  select(-date, -project) %>%
-  replace_na(list(
-    approved.hours = 0, 
-    approved.actual.cost..eur. = 0
-  )) %>%
-  rename(
-    methodology = phase
-  ) %>%
-  mutate(
-    methodology = cutNamePrefix(methodology),
-    methodology = map_name_to_acronym(methodology, config$mapping),
-    task = as.character(task),
-    user = gsub(" ", "", user),
-    days.planned = task.planned.hours / 8,
-    days.spent = approved.hours / 8
-  )
-
+### Not deleted because of potential future requirements in regards to 
+### the addition of volunatary project data
+## Add cost_type column to data frames to separate billable from voluntary 
+## work later (V: Voluntary, B: Billable)
+##oa.voluntary.raw$cost_type <- rep('V', dim(oa.voluntary.raw)[1])
+##oa.proj.billable.df$cost_type <- rep('B', dim(oa.proj.billable.df)[1])
+## Merge billable and voluntary project
+##oa.processed.df <- bind_rows(oa.voluntary.raw, oa.proj.billable.df)
+oa.processed.df$cost_type <- rep('B', dim(oa.processed.df)[1])
 
 # Extract total billable and total voluntary hours spent
-total.vol.hours <- sum(oa.processed.df$approved.hours[oa.processed.df$cost_type == "V"])
-total.bill.hours <- sum(oa.processed.df$approved.hours[oa.processed.df$cost_type == "B"])
+total.vol.hours <- sum(oa.processed.df$approved_hours[oa.processed.df$cost_type == "V"])
+total.bill.hours <- sum(oa.processed.df$approved_hours[oa.processed.df$cost_type == "B"])
 
-# Correct possible false setup in source system
-oa.processed.df$approved.actual.cost..eur.[oa.processed.df$cost_type == "V"] <- 0
 
 # Extract LC issue number and store result in separate column
 oa.processed.df$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed.df$task, 
@@ -202,6 +221,8 @@ oa.processed.df$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed.df$ta
 # Add dummy issue number to OA tasks without LC representation
 group_index <- group_indices(oa.processed.df, methodology, task)
 oa.processed.df$lc.issue.numb[is.na(oa.processed.df$lc.issue.numb)] <- group_index[is.na(oa.processed.df$lc.issue.numb)]
+
+
 
 
 
@@ -255,7 +276,7 @@ write.csv(totalInvestByMethInPersonDays,
 totalInvestByMethInEuros <- oa.pro.mer %>%
                               group_by(methodology) %>%
                               summarize(
-                                eurosSpent = round(sum(approved.actual.cost..eur.)/1000,
+                                eurosSpent = round(sum(approved_costs_EUR)/1000,
                                                    digits = 2)
                                 )
 write.csv(totalInvestByMethInEuros, 

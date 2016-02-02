@@ -21,8 +21,7 @@
 error <- FALSE
 
 report_list <- try(download_openair_data_rvest(c(config$openair$project_billable_report_id,
-                                                 config$openair$timesheet_billable_report_id,
-                                                 config$openair$voluntary_report_id)),
+                                                 config$openair$timesheet_billable_report_id)),
                    silent = TRUE)
 
 if (class(report_list) == 'try-error' | class(report_list) != 'list' ) {
@@ -31,7 +30,6 @@ if (class(report_list) == 'try-error' | class(report_list) != 'list' ) {
 } else {
   tmp.proj.billable.df <- report_list[[1]]
   tmp.timesheet.billable.df <- report_list[[2]]
-  tmp.voluntary.df <- report_list[[3]]
 }
 
 
@@ -82,8 +80,7 @@ if (!error) {
             row.names = FALSE)
   write.csv(tmp.timesheet.billable.df, file = './rawData/oa_timesheet_billable.csv', 
             row.names = FALSE)
-  write.csv(tmp.voluntary.df, file = './rawData/prime_voluntary.csv',
-            row.names = FALSE)
+
   
   con <- file('./rawData/employeeCountryMapping.xlsx', open = 'wb')
   writeBin(employee.binary, con)
