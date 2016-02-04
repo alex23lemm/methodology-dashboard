@@ -367,6 +367,24 @@ oaDaysSpentByContributor <- group_by(oa.pro.mer, methodology, lc.issue.numb,
 write.csv(oaDaysSpentByContributor, 
           file = './rOutput/oaDaysSpentByContributor.csv', row.names = FALSE)
 
+
+# Create readiness/progress per work package table
+
+readinessByServicePackage <- lc.prime.tasks %>% 
+  filter(!is.na(parent.task), subject %in% c('General readiness', 
+                                             'Consulting Readiness', 
+                                             'Sales Readiness')) %>% 
+  select(parent.task, subject, done) %>% 
+  spread(subject, done) %>%
+  left_join(lc.prime.tasks,. , by = c("lc.issue.numb" = "parent.task")) %>%
+  filter(tracker == "Work package") %>%
+  select(-c(tracker, subject, parent.task))
+
+write.csv(readinessByPlatform,
+          file = "./rOutput/readinessByServicePackage.csv", row.names = FALSE)
+
+
+
 readinessByPlatform <- lc.prime.tasks %>% 
   filter(subject %in% c("General readiness", "Sales Readiness",
                         "Consulting Readiness")) %>%
