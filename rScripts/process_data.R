@@ -167,7 +167,24 @@ merge_oa_project_timesheet_data <- function(project_df, timesheet_df) {
       planned_hours = all.assigned.hours,
       methodology = phase
     ) %>%
-    select(-date, -project, -task_user, -task.planned.hours) %>%
+    select(-date, -project, -task_user, -task.planned.hours) 
+  
+  return(project_df)
+}
+
+
+process_merged_oa_data <- function(oa_df, exclude_vec) {
+  #  Processes a OA data report orginally created by merging a project-based and
+  #  timesheet-based report.
+  #
+  # Args:
+  #   oa_df: Merged OA report
+  #   exclude_vec: Character vector of OA phase names to exclude
+  #         
+  # Returns:
+  #   Processed merged OA report data
+  
+  oa_df %<>% filter(!methodology %in% exclude_vec) %>% 
     replace_na(list(
       approved_hours = 0,
       approved_costs_EUR = 0
@@ -178,22 +195,20 @@ merge_oa_project_timesheet_data <- function(project_df, timesheet_df) {
       task = as.character(task),
       user = gsub(" ", "", user),
       days.planned = planned_hours / 8,
-      days.spent = approved_hours / 8
-    )
+      days.spent = approved_hours / 8,
+      cost_type = rep('B', dim(.)[1]),
+      # Extract LC issue number and store result in separate column
+      lc.issue.numb = as.numeric(sapply(regmatches(task, 
+                                                   regexec('^([0-9]+)', task)),
+                                        function(x)x[2])),
+      # Add dummy issue number to OA tasks without LC representation
+      index = group_indices_(., .dots = c("methodology", "task")),
+      lc.issue.numb = ifelse(is.na(lc.issue.numb), index, lc.issue.numb)
+    ) %>%
+    select(-index)
   
-  return(project_df)
-}
-
-process_merged_oa_data <- function(oa_df) {
-  #  Processes a OA data report orginally created by merging a project-based and
-  #  timesheet-based report.
-  #
-  # Args:
-  #   oa_df: merged OA report data
-  #         
-  # Returns:
-  #   Processed merged OA report data
   
+  return(oa_df)
 }
 
 
@@ -207,37 +222,12 @@ oa.timesheet.billable.df <- read.csv('./rawData/oa_timesheet_billable.csv',
                             header = TRUE, encoding = 'UTF-8')
 
 oa.processed.df <- merge_oa_project_timesheet_data(oa.proj.billable.df,
-                                                oa.timesheet.billable.df)
-# merge and preprocessing: strict separation
-
-oa.processed.df %<>% filter(!methodology %in% config$exlude)
-
-
-### Not deleted because of potential future requirements in regards to 
-### the addition of volunatary project data
-## Add cost_type column to data frames to separate billable from voluntary 
-## work later (V: Voluntary, B: Billable)
-##oa.voluntary.raw$cost_type <- rep('V', dim(oa.voluntary.raw)[1])
-##oa.proj.billable.df$cost_type <- rep('B', dim(oa.proj.billable.df)[1])
-## Merge billable and voluntary project
-##oa.processed.df <- bind_rows(oa.voluntary.raw, oa.proj.billable.df)
-oa.processed.df$cost_type <- rep('B', dim(oa.processed.df)[1])
+                                         oa.timesheet.billable.df) %>% 
+  process_merged_oa_data(config$exclude)
 
 # Extract total billable and total voluntary hours spent
 total.vol.hours <- sum(oa.processed.df$approved_hours[oa.processed.df$cost_type == "V"])
 total.bill.hours <- sum(oa.processed.df$approved_hours[oa.processed.df$cost_type == "B"])
-
-
-# Extract LC issue number and store result in separate column
-oa.processed.df$lc.issue.numb <- as.numeric(sapply(regmatches(oa.processed.df$task, 
-                                                regexec('^([0-9]+)', 
-                                                        oa.processed.df$task)),
-                                     function(x)x[2]))
-# Add dummy issue number to OA tasks without LC representation
-group_index <- group_indices(oa.processed.df, methodology, task)
-oa.processed.df$lc.issue.numb[is.na(oa.processed.df$lc.issue.numb)] <- group_index[is.na(oa.processed.df$lc.issue.numb)]
-
-
 
 
 
