@@ -133,7 +133,7 @@ get_issue_hierarchy  <- function(lc_data_df, issue_numbers) {
 }
 
 
-preprocess_oa_project_timesheet_data <- function(project_df, timesheet_df) {
+merge_oa_project_timesheet_data <- function(project_df, timesheet_df) {
   #  Preprocesses and merges project-based and timesheet-based report data
   #  extracted from the same OA project. 
   #
@@ -184,6 +184,18 @@ preprocess_oa_project_timesheet_data <- function(project_df, timesheet_df) {
   return(project_df)
 }
 
+process_merged_oa_data <- function(oa_df) {
+  #  Processes a OA data report orginally created by merging a project-based and
+  #  timesheet-based report.
+  #
+  # Args:
+  #   oa_df: merged OA report data
+  #         
+  # Returns:
+  #   Processed merged OA report data
+  
+}
+
 
 # 2. Process OpenAir and LabCase raw data --------------------------------------
 
@@ -194,8 +206,11 @@ oa.proj.billable.df <- read.csv('./rawData/oa_proj_billable.csv',
 oa.timesheet.billable.df <- read.csv('./rawData/oa_timesheet_billable.csv',
                             header = TRUE, encoding = 'UTF-8')
 
-oa.processed.df <- preprocess_oa_project_timesheet_data(oa.proj.billable.df,
+oa.processed.df <- merge_oa_project_timesheet_data(oa.proj.billable.df,
                                                 oa.timesheet.billable.df)
+# merge and preprocessing: strict separation
+
+oa.processed.df %<>% filter(!methodology %in% config$exlude)
 
 
 ### Not deleted because of potential future requirements in regards to 
@@ -245,7 +260,7 @@ lc.prime.tasks <- read.csv('./rawData/lc_tasks.csv',
   mutate(
     methodology = cutNamePrefix(methodology),
     methodology = map_name_to_acronym(methodology, config$mapping)
-  )
+  ) 
 
 
 template_issues <- lc.prime.tasks %>%
@@ -380,7 +395,7 @@ readinessByServicePackage <- lc.prime.tasks %>%
   filter(tracker == "Work package") %>%
   select(-c(tracker, subject, parent.task))
 
-write.csv(readinessByPlatform,
+write.csv(readinessByServicePackage,
           file = "./rOutput/readinessByServicePackage.csv", row.names = FALSE)
 
 
