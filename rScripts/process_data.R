@@ -250,7 +250,7 @@ lc.prime.tasks <- read.csv('./rawData/lc_tasks.csv',
   mutate(
     methodology = cutNamePrefix(methodology),
     methodology = map_name_to_acronym(methodology, config$mapping)
-  ) 
+  ) %>% filter(methodology != "Platform Rapid Innovation Methodology")
 
 
 template_issues <- lc.prime.tasks %>%
@@ -335,16 +335,26 @@ write.csv(totalDays, file = './rOutput/totalDays.csv', row.names = FALSE)
 
 
 
-# Create release progress by methodology table
-# Only include work package trackers; calculate overall methodology achievement 
-# in percent
-releaseProgressByMethodology <- lc.prime.tasks %>%
-                                 filter(tracker == 'Work package') %>%
-                                 group_by(methodology) %>%
-                                 summarize(
-                                   #achievementInPercent = (sum(spent.time) / sum(estimated.time))*100
-                                   achievementInPercent = sum(done) / n()
-                                 )
+# Create release progress by methodology table and calculate overall 
+# methodology achievement in percent
+# Only include trackers which are tree leaves to ensure that every methodology
+# is treated equally regardless if a time estimate was given or not. If a 
+# certain issue ID is not present in the parent ID vector than the respective
+# issue must be a leaf
+
+lc_id <- lc.prime.tasks$lc.issue.numb
+parent_id <- lc.prime.tasks$parent.task
+leaf_id <- lc_id[!lc_id %in% parent_id]
+
+releaseProgressByMethodology <- lc.prime.tasks %>% 
+  filter(lc.issue.numb %in% leaf_id) %>%
+  group_by(methodology) %>%
+  summarize(
+    achievementInPercent = sum(done) / n()
+  ) 
+
+
+
 
 write.csv(releaseProgressByMethodology, 
           file = './rOutput/releaseProgressByMethodolgy.csv', row.names = FALSE)
