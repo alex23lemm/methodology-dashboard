@@ -265,7 +265,7 @@ download_openair_data_mix <- function(report_ids) {
 
 
 download_planio_report_api <- function(report_id, project_name, api_key) {
-  # Downloads a task reportfrom LabCase using curl
+  # Downloads a task report from LabCase using curl
   #
   # Returns:
   #   data frame containing parsed CSV report data
