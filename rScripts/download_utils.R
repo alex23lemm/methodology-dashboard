@@ -78,6 +78,11 @@ download_openair_data_rvest <- function(report_ids) {
 download_openair_data_rselenium <- function(report_ids){
   # Downloads report csv data from OpenAir using RSelenium
   #
+  # INFO: This function was implemented as a backup option for 
+  #       download_openair_data_rvest(). Add library(RSelenium) and library(XML) 
+  #       to main.R if you would like to use it.
+  #       
+  #
   # Args:
   #   report_ids: Unique report IDs
   #        
@@ -164,104 +169,6 @@ download_openair_data_rselenium <- function(report_ids){
   
   return(report_list)
 }
-
-
-download_openair_data_mix <- function(report_ids) {
-  # Downloads report csv data from OpenAir using RSelenium and curl.
-  # The login is performed using RSelenium. After that the cookies are extracted
-  # and passed on to a rvest session object.
-  #
-  #
-  # Args:
-  #   report_ids: Unique report IDs
-  #        
-  # Returns:
-  #   list containing parsed csv data as data frames
-  
-  base_url = "https://www.openair.com/"
-  
-  pJS <- phantom(extras = c('--ignore-ssl-errors=yes', '--ssl-protocol=tlsv1'))
-  Sys.sleep(5) 
-  remDrv <- remoteDriver(browserName = 'phantomjs')
-  Sys.sleep(5)
-  remDrv$open()
-  Sys.sleep(5) 
-  
-  # Simulate browser session and navigate to report download section -------------
-  
-  remDrv$navigate('https://www.openair.com/index.pl')
-  Sys.sleep(5)
-  
-  # Fill out and submit form
-  remDrv$findElement(using = 'name', 'account_nickname')$sendKeysToElement(list(config$openair$company))
-  Sys.sleep(5)
-  remDrv$findElement(using = 'name', 'user_nickname')$sendKeysToElement(list(config$openair$user))
-  Sys.sleep(5)
-  remDrv$findElement(using = 'name', 'password')$sendKeysToElement(list(config$openair$password))
-  Sys.sleep(5)
-  remDrv$findElement(using = 'css selector', '.loginFormBtn')$clickElement()
-  Sys.sleep(15)
-  
-  # Extract cookies and pass them to rvest session object
-  my_cookies <- remDrv$getAllCookies()
-  Sys.sleep(10)
-  
-  my_cookies <- do.call(rbind.data.frame, my_cookies)
-  my_cookies <- my_cookies %>% transmute(
-    name = as.character(name), 
-    value = as.character(value)
-  )
-  
-  cookies <- my_cookies$value
-  names(cookies) <- my_cookies$name
-  
-  openair <- html_session(remDrv$getCurrentUrl()[[1]], set_cookies(.cookies = cookies))
-  
-  # Stop phantom session and continue with curl
-  remDrv$close()
-  pJS$stop() 
-
-  openair %<>% follow_link('Dashboard')
-  
-  proxy_section_link <- read_html(openair) %>% 
-    html_node(xpath = "//script[contains(text(),'OA3.ui.transform.nav.header.init')]") %>%
-    html_text
-  proxy_section_link <- regexpr("Support(.*)dashboard.pl(.*?)proxy_as", 
-                                proxy_section_link) %>% 
-    regmatches(proxy_section_link, .)
-  proxy_section_link <- regexpr("dashboard.pl(.*?)proxy_as", 
-                                proxy_section_link) %>%
-    regmatches(proxy_section_link, .)  
-  
-  
-  # Continue browsing with proxy user
-  openair %<>% jump_to(paste0(base_url, proxy_section_link)) %>% 
-    follow_link(config$openair$proxy) %>%
-    follow_link('Reports') %>% follow_link('Saved reports')
-  
-  # Identify and download reports of choice ------------------------------------
-  
-  report_links <- read_html(openair) %>%
-    html_nodes(xpath = '//a[@title="Download"]/@href') %>% html_text
-  report_list <- list()
-  
-  for (i in seq_along(report_ids)) {
-    
-    index <- which(grepl(report_ids[i] , report_links))
-    openair %<>% jump_to(paste0(base_url, report_links[index]))
-    # Navigate to download section
-    download_url <- read_html(openair) %>% 
-      html_nodes(xpath = "//a[text()='Click here']/@href") %>% html_text
-    # Download and store csv data
-    parsed_csv <- openair %>% 
-      jump_to(paste0(base_url, download_url[[1]])) %$%
-      response %>% content("parsed")
-    
-    report_list[[i]] <- parsed_csv
-  }
-  return(report_list)
-}
-
 
 
 download_planio_report_api <- function(report_id, project_name, api_key) {
