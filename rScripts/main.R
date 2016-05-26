@@ -5,7 +5,6 @@
 # Load libraries and utility functions -----------------------------------------
 
 
-library(RCurl)
 library(httr)
 library(lubridate)
 library(yaml)
