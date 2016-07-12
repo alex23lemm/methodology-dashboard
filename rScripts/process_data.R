@@ -407,7 +407,7 @@ readinessByPlatform <- lc.prime.tasks %>%
   summarize(
     done = sum(done)/n()
   ) %>%
-  spread(subject, done)
+  spread(subject, done, fill = 0)
 
 write.csv(readinessByPlatform,
           file = "./rOutput/readinessByPlatform.csv", row.names = FALSE)
