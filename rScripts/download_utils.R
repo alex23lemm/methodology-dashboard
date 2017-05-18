@@ -42,15 +42,16 @@ download_openair_data_rvest <- function(report_ids) {
   # Continue browsing with proxy user
   openair %<>% jump_to(paste0(base_url, proxy_section_link)) %>% 
     follow_link(config$openair$proxy) %>%
-    follow_link('Reports') %>% follow_link('Saved reports')
+    follow_link('Reports') %>% 
+    follow_link('Saved reports')
   
+
   # Identify and download reports of choice ------------------------------------
   
-  my_cookies <- cookies(openair) %>% unlist
   report_links <- read_html(openair) %>%
-    html_nodes(xpath = '//a[@title="Download"]/@href') %>% html_text
-  report_list <- list()
+    html_nodes(xpath = '//a[i/@title="Download"]/@href') %>% html_text
   
+  report_list <- list()
   
   for (i in seq_along(report_ids)) {
     
@@ -61,8 +62,10 @@ download_openair_data_rvest <- function(report_ids) {
       html_nodes(xpath = "//a[text()='Click here']/@href") %>%
       html_text %>% extract2(1)
     # Download and store csv data
-    parsed_csv <- GET(paste0(base_url, download_url), 
-                      set_cookies(.cookies = my_cookies)) %>% content('parsed')
+    parsed_csv <- jump_to(openair, paste0(base_url, download_url)) %$% 
+      content(response, "parsed") 
+    
+    
     report_list[[i]] <- parsed_csv
     
     if (i < length(report_ids)) {
