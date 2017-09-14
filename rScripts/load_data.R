@@ -41,7 +41,7 @@ if (class(employee.binary) == c('try-error') ||
   stop("LabCase: Download of Excel file via httr failed")
 }
 
-employee.binary <- content(employee.binary)
+employee.binary <- content(employee.binary, as = "raw")
 
 
 # Download task list
